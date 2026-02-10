@@ -1116,8 +1116,8 @@ def _filter_cloud_storage_files(
             filter(lambda x: x.startswith(cloud_storage_instance.prefix), data["server_files"])
         )
 
-        # We only need to process the files specified in job_file_mapping
     if job_file_mapping is not None:
+        # We only need to process the files specified in job_file_mapping
         filtered_files = []
         for f in itertools.chain.from_iterable(job_file_mapping):
             if f not in data["server_files"]:
