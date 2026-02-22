@@ -29,7 +29,6 @@ import {
 } from 'reducers';
 import { switchToolsBlockerState } from './settings-actions';
 import { updateJobAsync } from './jobs-actions';
-
 interface AnnotationsParameters {
     filters: object[];
     frame: number;
@@ -1778,6 +1777,75 @@ export function updateEditedStateAsync(objectState: ObjectState | null): ThunkAc
         const { activeObjectHidden } = state.annotation.canvas;
         if (activeObjectHidden !== newActiveObjectHidden) {
             dispatch(changeHideActiveObjectAsync(newActiveObjectHidden));
+        }
+    };
+}
+
+
+// Copyright (C) 2026 CVAT Relation Tool Contributors
+// SPDX-License-Identifier: MIT
+export function generateRelationsAsync(
+    jobInstance: any,
+    relations: any[],
+    minDistance: number
+): ThunkAction {
+    return async (dispatch: ActionCreator<Dispatch>) => {
+        // 1. 获取 CVAT 核心实例
+        const core = getCore();
+
+        try {
+            dispatch({
+                type: AnnotationActionTypes.GENERATE_RELATIONS_REQUEST,
+            });
+
+            const jobID = jobInstance.id;
+
+            // 2. 使用 core.server.request 替代 fetch
+            // 它会自动携带 Authorization 头和 CSRF token
+            const result = await core.server.request(
+                `/api/jobs/${jobID}/auto-relations`, // 注意：这里的 URL 需与后端路由匹配，去掉了末尾斜杠以防万一
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    // cvat-core (axios) 使用 'data' 字段，而不是 fetch 的 'body'
+                    data: JSON.stringify({
+                        relations,
+                        min_distance: minDistance,
+                        cleanup_invalid: false,
+                    }),
+                }
+            );
+
+            // core.server.request 成功时直接返回数据，或通过 result.data 返回
+            // 根据 cvat-core 版本，通常直接返回响应体或 axios 响应对象
+            // 这是一个保险的写法：
+            const responseData = result.data || result;
+
+            dispatch({
+                type: AnnotationActionTypes.GENERATE_RELATIONS_SUCCESS,
+                payload: {
+                    created: responseData.created,
+                    errors: responseData.errors,
+                },
+            });
+
+            // 3. 刷新标注 (这一步很重要，重新拉取后端最新数据到 Canvas)
+            // 注意：fetchAnnotationsAsync 需要传入 sessionInstance (即 jobInstance)
+            dispatch(fetchAnnotationsAsync(jobInstance));
+
+            return responseData;
+
+        } catch (error: any) {
+            // 错误处理
+            dispatch({
+                type: AnnotationActionTypes.GENERATE_RELATIONS_FAILED,
+                payload: {
+                    error: error.message || error.toString(),
+                },
+            });
+            throw error;
         }
     };
 }

@@ -8,7 +8,7 @@
 .cvat-standard-workspace.ant-layout {
     height: 100%;
 
-    > .ant-layout-content {
+    >.ant-layout-content {
         overflow: hidden hidden;
     }
 }
@@ -34,16 +34,16 @@
     height: 100%;
     overflow: hidden auto;
 
-    > .ant-layout-sider-children {
+    >.ant-layout-sider-children {
         display: flex;
         flex-direction: column;
 
-        > .cvat-objects-sidebar-tabs {
+        >.cvat-objects-sidebar-tabs {
             flex-grow: 1;
             padding-top: $grid-unit-size;
             height: 0;
 
-            > div {
+            >div {
                 display: flex;
 
                 div[role="tab"] {
@@ -62,7 +62,7 @@
     }
 }
 
-.cvat-rotate-canvas-controls-right > svg {
+.cvat-rotate-canvas-controls-right>svg {
     transform: scaleX(-1);
 }
 
@@ -92,6 +92,7 @@
 .cvat-slice-control,
 .cvat-split-track-control,
 .cvat-issue-control,
+.cvat-relation-control,
 .cvat-tools-control,
 .cvat-extra-controls-control,
 .cvat-opencv-control {
@@ -108,7 +109,7 @@
         transform: scale(0.65);
     }
 
-    > svg {
+    >svg {
         transform: scale(0.8);
         width: 40px;
         height: 40px;
@@ -116,7 +117,7 @@
 }
 
 .cvat-antd-icon-control {
-    > svg {
+    >svg {
         width: 40px;
         height: 40px;
     }
@@ -127,7 +128,7 @@
     transform: scale(0.75);
 }
 
-.cvat-disabled-canvas-control > svg {
+.cvat-disabled-canvas-control>svg {
     filter: opacity(0.45);
 }
 
@@ -145,7 +146,7 @@
 }
 
 .cvat-rotate-canvas-popover {
-    .ant-popover-content > .ant-popover-inner {
+    .ant-popover-content>.ant-popover-inner {
         padding: 0;
     }
 }
@@ -154,7 +155,7 @@
 .cvat-opencv-control-popover,
 .cvat-setup-tag-popover,
 .cvat-tools-control-popover {
-    .ant-popover-content > .ant-popover-inner {
+    .ant-popover-content>.ant-popover-inner {
         padding: 0;
     }
 }
@@ -166,11 +167,11 @@
 }
 
 .cvat-tools-interactor-setups {
-    > div {
+    >div {
         margin-top: $grid-unit-size * 2;
         width: 100%;
 
-        > .ant-switch {
+        >.ant-switch {
             margin-right: $grid-unit-size;
         }
     }
@@ -189,7 +190,7 @@
     margin-top: $grid-unit-size;
     margin-bottom: $grid-unit-size;
 
-    > button {
+    >button {
         margin-right: $grid-unit-size;
     }
 }
@@ -239,7 +240,7 @@
     width: $grid-unit-size * 5;
     height: $grid-unit-size * 5;
 
-    > i {
+    >i {
         font-size: 16px;
     }
 }
@@ -272,7 +273,7 @@
     background: $background-color-2;
     width: $grid-unit-size * 32;
 
-    > div {
+    >div {
         margin-top: $grid-unit-size;
     }
 }
@@ -284,7 +285,7 @@
         width: 27 * $grid-unit-size;
     }
 
-    > div:last-child {
+    >div:last-child {
         margin-bottom: $grid-unit-size;
     }
 }
@@ -292,11 +293,11 @@
 .cvat-draw-shape-popover-content {
     @extend .cvat-popover-content;
 
-    > div:nth-child(3) > div > div {
+    >div:nth-child(3)>div>div {
         width: 100%;
     }
 
-    > div:last-child > div {
+    >div:last-child>div {
         display: flex;
         justify-content: space-between;
 
@@ -311,7 +312,7 @@
 }
 
 .cvat-propagate-confirm {
-    > .ant-row {
+    >.ant-row {
         align-items: flex-start;
         margin-bottom: $grid-unit-size * 2;
     }
@@ -326,7 +327,7 @@
         height: $grid-unit-size;
     }
 
-    .cvat-propagate-up-to-wrapper > div:first-child {
+    .cvat-propagate-up-to-wrapper>div:first-child {
         margin-bottom: $grid-unit-size;
     }
 }

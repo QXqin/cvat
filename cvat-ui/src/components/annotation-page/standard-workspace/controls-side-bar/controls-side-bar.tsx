@@ -38,6 +38,7 @@ import GroupControl, { Props as GroupControlProps } from './group-control';
 import JoinControl, { Props as JoinControlProps } from './join-control';
 import SplitControl, { Props as SplitControlProps } from './split-control';
 import SliceControl, { Props as SliceControlProps } from './slice-control';
+import RelationControl from 'containers/annotation-page/standard-workspace/controls-side-bar/relation-control';
 
 type Label = CombinedState['annotation']['job']['labels'][0];
 
@@ -463,8 +464,9 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
                 activeControl={activeControl}
                 disabled={controlsDisabled}
             />
-
+            <RelationControl />
             <ExtraControlsControl />
+
         </Layout.Sider>
     );
 }

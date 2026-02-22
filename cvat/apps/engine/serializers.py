@@ -3954,3 +3954,83 @@ class AnnotationGuideWriteSerializer(WriteOnceMixin, serializers.ModelSerializer
     class Meta:
         model = models.AnnotationGuide
         fields = ('id', 'task_id', 'project_id', 'markdown', )
+
+
+# ============================================================
+# Relation Tool Serializers
+# ============================================================
+
+class RelationSpecSerializer(serializers.Serializer):
+    """单个关系规格序列化器"""
+    subject_id = serializers.IntegerField(
+        help_text="主体标注的 clientID",
+        min_value=1
+    )
+    object_id = serializers.IntegerField(
+        help_text="客体标注的 clientID",
+        min_value=1
+    )
+    predicate = serializers.CharField(
+        help_text="关系类型（谓词）",
+        max_length=100,
+        allow_blank=False
+    )
+    frame = serializers.IntegerField(
+        help_text="帧号",
+        min_value=0
+    )
+
+    def validate(self, data):
+        """验证数据"""
+        if data['subject_id'] == data['object_id']:
+            raise serializers.ValidationError(
+                "主体和客体不能是同一个对象"
+            )
+        return data
+
+
+class AutoGenerateRelationsRequestSerializer(serializers.Serializer):
+    """自动生成关系的请求序列化器"""
+    relations = RelationSpecSerializer(
+        many=True,
+        help_text="关系规格列表"
+    )
+    min_distance = serializers.FloatField(
+        default=10.0,
+        help_text="关系点之间的最小距离（像素）",
+        min_value=1.0,
+        max_value=100.0
+    )
+    cleanup_invalid = serializers.BooleanField(
+        default=False,
+        help_text="是否自动清理无效的关系点"
+    )
+
+    def validate_relations(self, value):
+        """验证关系列表不为空"""
+        if not value:
+            raise serializers.ValidationError(
+                "关系列表不能为空"
+            )
+        return value
+
+
+class RelationErrorSerializer(serializers.Serializer):
+    """关系处理错误序列化器"""
+    relation = RelationSpecSerializer(
+        help_text="失败的关系规格"
+    )
+    error = serializers.CharField(
+        help_text="错误信息"
+    )
+
+
+class AutoGenerateRelationsResponseSerializer(serializers.Serializer):
+    """自动生成关系的响应序列化器"""
+    created = serializers.IntegerField(
+        help_text="成功创建的关系数量"
+    )
+    errors = RelationErrorSerializer(
+        many=True,
+        help_text="处理失败的关系列表"
+    )

@@ -158,6 +158,22 @@ from utils.dataset_manifest import ImageManifestManager
 from . import models
 from .log import ServerLogManager
 
+
+# Relation Tool imports
+import logging
+
+from cvat.apps.engine.relation_tool.processor import RelationProcessor
+from cvat.apps.engine.relation_tool.utils import (
+    get_relation_label_id,
+    validate_relation_label_attributes
+)
+from cvat.apps.engine.serializers import (
+    AutoGenerateRelationsRequestSerializer,
+    AutoGenerateRelationsResponseSerializer
+)
+logger = logging.getLogger(__name__)
+
+
 slogger = ServerLogManager(__name__)
 
 _UPLOAD_PARSER_CLASSES = api_settings.DEFAULT_PARSER_CLASSES + [MultiPartParser]
@@ -2100,6 +2116,212 @@ class JobViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
 
         response_serializer = JobValidationLayoutReadSerializer(db_job)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary='Auto-generate relation annotations',
+        description='Automatically create relation points based on subject-predicate-object triplets',
+        request=AutoGenerateRelationsRequestSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=AutoGenerateRelationsResponseSerializer,
+                description='Relations created successfully'
+            ),
+            400: OpenApiResponse(description='Invalid request data'),
+            404: OpenApiResponse(description='Relation label not found'),
+        },
+        tags=['jobs']
+    )
+    @action(detail=True, methods=['POST'], url_path='auto-generate-relations')
+    def auto_generate_relations(self, request, pk=None):
+        """
+        自动生成关系标注
+
+        该端点接收一组关系规格（subject-predicate-object），
+        自动计算最佳位置并创建关系点标注
+
+        端点: POST /api/jobs/{job_id}/auto-generate-relations/
+        """
+        try:
+            # 1. 获取 Job 对象并检查权限
+            job = self.get_object()
+
+            # 2. 验证请求数据
+            request_serializer = AutoGenerateRelationsRequestSerializer(data=request.data)
+            if not request_serializer.is_valid():
+                return Response(
+                    request_serializer.errors,
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            validated_data = request_serializer.validated_data
+            relation_specs = validated_data['relations']
+            min_distance = validated_data['min_distance']
+            cleanup_invalid = validated_data.get('cleanup_invalid', False)
+
+            # 3. 验证 Relation 标签是否存在
+            validation_result = validate_relation_label_attributes(job)
+            if not validation_result['valid']:
+                return Response(
+                    {
+                        'detail': 'Relation 标签配置无效',
+                        'errors': validation_result['missing_attributes']
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            relation_label_id = validation_result['label_id']
+
+            # 4. 获取当前标注数据
+            job_annotations = job.get_annotations()
+
+            # 5. 初始化处理器
+            processor = RelationProcessor(job_annotations)
+
+            # 6. 批量创建关系
+            result = processor.batch_create_relations(
+                relation_specs=relation_specs,
+                relation_label_id=relation_label_id,
+                min_distance=min_distance
+            )
+
+            # 7. 如果有新标注，保存到数据库
+            if result['created_count'] > 0:
+                # 将新标注添加到现有标注中
+                job_annotations['shapes'].extend(result['created_annotations'])
+
+                # 保存标注
+                job.put_annotations(job_annotations)
+
+                logger.info(
+                    f"Job {job.id}: 成功创建 {result['created_count']} 个关系标注"
+                )
+
+            # 8. 可选：清理无效关系
+            if cleanup_invalid and result['created_count'] > 0:
+                # TODO: 实现清理逻辑
+                pass
+
+            # 9. 返回结果
+            response_serializer = AutoGenerateRelationsResponseSerializer({
+                'created': result['created_count'],
+                'errors': result['errors']
+            })
+
+            return Response(
+                response_serializer.data,
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            logger.exception(f"生成关系标注时发生错误: {str(e)}")
+            return Response(
+                {'detail': f'服务器错误: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    # ============================================================
+    # 可选：添加清理无效关系的端点
+    # ============================================================
+
+    @extend_schema(
+        summary='Clean invalid relation annotations',
+        description='Remove relation points whose subject or object no longer exists',
+        responses={
+            200: OpenApiResponse(description='Cleanup completed'),
+            404: OpenApiResponse(description='Relation label not found'),
+        },
+        tags=['jobs']
+    )
+    @action(detail=True, methods=['POST'], url_path='clean-relations')
+    def clean_relations(self, request, pk=None):
+        """
+        清理无效的关系标注
+
+        删除那些主体或客体已不存在的关系点
+
+        端点: POST /api/jobs/{job_id}/clean-relations/
+        """
+        try:
+            job = self.get_object()
+
+            # 验证 Relation 标签
+            validation_result = validate_relation_label_attributes(job)
+            if not validation_result['valid']:
+                return Response(
+                    {
+                        'detail': 'Relation 标签配置无效',
+                        'errors': validation_result['missing_attributes']
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            relation_label_id = validation_result['label_id']
+
+            # 获取标注数据
+            job_annotations = job.get_annotations()
+
+            # 初始化处理器
+            processor = RelationProcessor(job_annotations)
+
+            # 查找所有关系点
+            relation_shapes = [
+                shape for shape in job_annotations['shapes']
+                if shape.get('type') == 'points' and
+                   shape.get('label_id') == relation_label_id
+            ]
+
+            # 验证每个关系点
+            invalid_ids = []
+            for shape in relation_shapes:
+                # 从 attributes 中提取 subject_id 和 object_id
+                attributes = {
+                    attr['spec_id']: attr['value']
+                    for attr in shape.get('attributes', [])
+                }
+
+                subject_id = attributes.get('subject_id')
+                object_id = attributes.get('object_id')
+
+                if not subject_id or not object_id:
+                    invalid_ids.append(shape.get('id'))
+                    continue
+
+                # 检查主体和客体是否存在
+                try:
+                    subject_id = int(subject_id)
+                    object_id = int(object_id)
+
+                    if (subject_id not in processor.annotation_map or
+                        object_id not in processor.annotation_map):
+                        invalid_ids.append(shape.get('id'))
+                except (ValueError, TypeError):
+                    invalid_ids.append(shape.get('id'))
+
+            # 删除无效关系
+            if invalid_ids:
+                job_annotations['shapes'] = [
+                    shape for shape in job_annotations['shapes']
+                    if shape.get('id') not in invalid_ids
+                ]
+
+                job.put_annotations(job_annotations)
+
+                logger.info(f"Job {job.id}: 清理了 {len(invalid_ids)} 个无效关系")
+
+            return Response(
+                {
+                    'cleaned': len(invalid_ids),
+                    'message': f'成功清理 {len(invalid_ids)} 个无效关系'
+                },
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            logger.exception(f"清理关系标注时发生错误: {str(e)}")
+            return Response(
+                {'detail': f'服务器错误: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 @extend_schema(tags=['issues'])
 @extend_schema_view(

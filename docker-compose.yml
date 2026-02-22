@@ -112,6 +112,7 @@ services:
       - cvat_data:/home/django/data
       - cvat_keys:/home/django/keys
       - cvat_logs:/home/django/logs
+      - ./cvat:/home/django/cvat
     networks:
       cvat:
         aliases:
@@ -147,6 +148,7 @@ services:
       - cvat_data:/home/django/data
       - cvat_keys:/home/django/keys
       - cvat_logs:/home/django/logs
+      - ./cvat:/home/django/cvat
     networks:
       - cvat
 
@@ -163,6 +165,7 @@ services:
       - cvat_data:/home/django/data
       - cvat_keys:/home/django/keys
       - cvat_logs:/home/django/logs
+      - ./cvat:/home/django/cvat
     networks:
       - cvat
 
@@ -179,6 +182,7 @@ services:
       - cvat_data:/home/django/data
       - cvat_keys:/home/django/keys
       - cvat_logs:/home/django/logs
+      - ./cvat:/home/django/cvat
     networks:
       - cvat
 
@@ -259,6 +263,8 @@ services:
       traefik.http.routers.cvat-ui.entrypoints: web
     networks:
       - cvat
+    volumes:
+      - ./cvat-ui/dist:/usr/share/nginx/html
 
   traefik:
     image: traefik:v3.6

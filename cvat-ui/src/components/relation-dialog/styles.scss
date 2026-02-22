@@ -1,0 +1,61 @@
+// Copyright (C) 2026 CVAT Relation Tool Contributors
+// SPDX-License-Identifier: MIT
+
+.cvat-relation-dialog {
+    .cvat-relation-dialog-frame {
+        font-weight: 600;
+        font-size: 16px;
+        color: #1890ff;
+    }
+
+    .cvat-relation-dialog-input-section {
+        padding: 16px;
+        background: #f5f5f5;
+        border-radius: 4px;
+        margin-bottom: 16px;
+    }
+
+    .cvat-relation-dialog-list {
+        margin-top: 16px;
+
+        .cvat-relation-dialog-list-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            background: #e6f7ff;
+            border-radius: 4px;
+        }
+
+        .cvat-relation-dialog-list-items {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .cvat-relation-dialog-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            background: white;
+
+            &:hover {
+                background: #fafafa;
+            }
+
+            .cvat-relation-dialog-predicate {
+                font-weight: 600;
+                color: #52c41a;
+            }
+
+            .cvat-relation-dialog-frame-badge {
+                padding: 2px 8px;
+                background: #f0f0f0;
+                border-radius: 4px;
+                font-size: 12px;
+            }
+        }
+    }
+}
