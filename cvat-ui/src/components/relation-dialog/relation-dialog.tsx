@@ -6,12 +6,12 @@ import { getCore } from 'cvat-core-wrapper';
 import { NavigationType, Workspace } from 'reducers';
 import { Row, Col } from 'antd/lib/grid';
 
-// ================= 类型定义 =================
+// ================= Type Definitions =================
 
 interface AnnotationObject {
     clientID: number;
     serverID: number | null;
-    trackID: number;        // XML track id (0-based) = clientID - 1
+    trackID: number;        // XML track ID (0-based) = clientID - 1
     label: any;
     objectType: 'shape' | 'track';
     color: string;
@@ -74,22 +74,22 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
     const [existingRelations, setExistingRelations] = useState<ExistingRelation[]>([]);
     const [loading, setLoading] = useState(false);
 
-    // 数据源
+    // Data sources
     const [availableObjects, setAvailableObjects] = useState<AnnotationObject[]>([]);
-    // 搜索词状态
+    // Search filter
     const [searchTerm, setSearchTerm] = useState<string>('');
-    // 选中的主体 clientID
+    // Currently selected subject clientID
     const [selectedSubjectClientID, setSelectedSubjectClientID] = useState<number | null>(null);
-    // 调试信息
+    // Debug log output
     const [debugInfo, setDebugInfo] = useState<string>('');
-    // 动态谓词列表
+    // Dynamically loaded predicate options
     const [predicateOptions, setPredicateOptions] = useState<string[]>([]);
 
     const safeFrameNum = typeof currentFrame === 'object' && currentFrame !== null
         ? currentFrame.number
         : currentFrame;
 
-    // ==== 键盘快捷键拦截 ====
+    // ==== Keyboard shortcut interception ====
     useEffect(() => {
         if (!visible) return undefined;
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -125,7 +125,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
     useEffect(() => {
         if (visible && jobInstance) {
             loadAnnotations();
-            setSearchTerm(''); // 打开时重置搜索
+            setSearchTerm(''); // Reset search on open
         }
     }, [visible, jobInstance, safeFrameNum]);
 
@@ -138,25 +138,25 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
     const loadAnnotations = async () => {
         try {
             const states = await jobInstance.annotations.get(safeFrameNum);
-            let logs = [`当前帧: ${safeFrameNum}`, `总状态数: ${states.length}`];
+            let logs = [`Frame: ${safeFrameNum}`, `Total states: ${states.length}`];
 
-            // 1. 动态读取谓词配置
+            // 1. Dynamically load predicate options from label config
             const relationLabelDef = jobInstance.labels.find((l: any) => l.name.toLowerCase() === 'relation');
             if (relationLabelDef) {
                 const predicateAttr = relationLabelDef.attributes.find((a: any) => a.name === 'predicate');
                 if (predicateAttr && predicateAttr.values && predicateAttr.values.length > 0) {
                     setPredicateOptions([...predicateAttr.values]);
-                    logs.push(`已加载谓词配置: ${predicateAttr.values.length} 个`);
+                    logs.push(`Loaded predicate config: ${predicateAttr.values.length} options`);
                 } else {
-                    logs.push('警告: 未找到 predicate 属性或其 values 为空，使用内置备选列表');
+                    logs.push('Warning: predicate attribute not found or empty, using built-in fallback list');
                     setPredicateOptions(['near', 'holding', 'riding', 'wearing', 'next_to', 'behind', 'in_front_of', 'above', 'below', 'parked on']);
                 }
             } else {
-                logs.push('警告: 项目中未定义 Relation 标签，使用内置备选列表');
+                logs.push('Warning: Relation label not defined in project, using built-in fallback list');
                 setPredicateOptions(['near', 'holding', 'riding', 'wearing', 'next_to', 'behind', 'in_front_of', 'above', 'below', 'parked on']);
             }
 
-            // 2. 提取实体对象
+            // 2. Extract entity objects (exclude Relation labels)
             const objects: AnnotationObject[] = states
                 .filter((state: any) => {
                     const labelName = state.label?.name || '';
@@ -173,7 +173,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
 
             objects.sort((a, b) => a.clientID - b.clientID);
 
-            // 建立查找表
+            // Build lookup map (clientID / trackID / serverID -> object)
             const lookupMap = new Map<string, AnnotationObject>();
             objects.forEach(obj => {
                 lookupMap.set(String(obj.clientID), obj);
@@ -184,9 +184,9 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
             });
 
             setAvailableObjects(objects);
-            logs.push(`有效实体对象: ${objects.length}`);
+            logs.push(`Valid entity objects: ${objects.length}`);
 
-            // 自动选中：若之前选中的主体在当前帧不存在，则重置为第一个
+            // Auto-select: reset to the first object if the previous subject is no longer visible
             if (objects.length > 0) {
                 const stillExists = objects.find(o => o.clientID === selectedSubjectClientID);
                 if (!stillExists) {
@@ -196,7 +196,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                 setSelectedSubjectClientID(null);
             }
 
-            // 3. 解析已有关系
+            // 3. Parse existing relations
             if (relationLabelDef) {
                 const existingList = states
                     .filter((state: any) => state.label.id === relationLabelDef.id && !state.removed)
@@ -214,7 +214,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                         const objObj = lookupMap.get(rawObj);
 
                         const formatName = (obj: AnnotationObject | undefined, rawId: string) => {
-                            if (!obj) return `ID:${rawId} (当前帧不可见)`;
+                            if (!obj) return `ID:${rawId} (not visible)`;
                             return `#${obj.clientID} ${obj.label.name}`;
                         };
 
@@ -231,7 +231,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                     });
 
                 setExistingRelations(existingList);
-                logs.push(`解析出关系: ${existingList.length} 条`);
+                logs.push(`Parsed relations: ${existingList.length}`);
             } else {
                 setExistingRelations([]);
             }
@@ -240,11 +240,11 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
 
         } catch (error: any) {
             console.error(error);
-            setDebugInfo(`错误: ${error.message}`);
+            setDebugInfo(`Error: ${error.message}`);
         }
     };
 
-    // ================= 筛选逻辑 =================
+    // ================= Filter Logic =================
 
     const filteredObjects = useMemo(() => {
         if (!searchTerm) return availableObjects;
@@ -270,7 +270,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                 const { subject_client_id, object_client_id, predicate } = values;
 
                 if (subject_client_id === object_client_id) {
-                    message.warning('主体和客体不能相同');
+                    message.warning('Subject and object cannot be the same');
                     return;
                 }
 
@@ -280,7 +280,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                 if (!subjObj || !objObj) return;
 
                 if (subjObj.serverID === null || objObj.serverID === null) {
-                    message.error('对象未保存，请先保存 (Ctrl+S)');
+                    message.error('Objects not saved. Please save first (Ctrl+S)');
                     return;
                 }
 
@@ -294,7 +294,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                 );
 
                 if (exists) {
-                    message.warning('列表里已存在该关系');
+                    message.warning('This relation already exists in the queue');
                     return;
                 }
 
@@ -311,17 +311,17 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
 
                 setNewRelations([...newRelations, newRel]);
                 form.resetFields(['object_client_id']);
-                message.success('已添加到队列');
+                message.success('Added to queue');
             });
     };
 
     const handleDeleteExisting = async (record: ExistingRelation) => {
         try {
             record.annotationObject.delete();
-            message.success('已标记删除');
+            message.success('Marked for deletion');
             setExistingRelations(prev => prev.filter(item => item.clientID !== record.clientID));
         } catch (error) {
-            message.error('删除失败');
+            message.error('Deletion failed');
         }
     };
 
@@ -341,11 +341,11 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                 _object_display_label: rel._object_display_label,
             }));
             await onGenerate(payload, minDistance);
-            message.success('生成指令已发送');
+            message.success('Generation command sent');
             setNewRelations([]);
             setTimeout(loadAnnotations, 800);
         } catch (error: any) {
-            message.error(`生成失败: ${error.message}`);
+            message.error(`Generation failed: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -371,25 +371,25 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
 
     const handleWipeAndSync = async () => {
         Modal.confirm({
-            title: '确认一键重排清洗？',
-            content: '此操作将自动收集当前任务的所有标注，重新排序并统一重分配ID，同时推送到服务器并刷新页面。注意：旧的原生 serverID 将彻底失效。',
-            okText: '确认清洗并刷新',
+            title: 'Confirm Wipe & Sync?',
+            content: 'This will collect all annotations in the current job, flatten them into a continuous ID space, re-sort them (shapes first, relations last), and forcibly re-import to flush CVAT\'s backend sequential IDs. Note: old serverIDs will be invalidated.',
+            okText: 'Confirm Wipe & Sync',
             okType: 'danger',
-            cancelText: '取消',
+            cancelText: 'Cancel',
             onOk: async () => {
                 try {
                     setLoading(true);
-                    setDebugInfo('正在导出原始序列化数据...');
+                    setDebugInfo('Exporting raw serialized collection...');
 
-                    // ====== 第一步：使用 export() 获取原始序列化集合 ======
-                    // 这会保留 tracks 的完整多帧 keyframes 结构，不会像 get() 那样把所有东西压扁到一帧
+                    // ====== Step 1: Use export() to get raw serialized collection ======
+                    // This preserves the full multi-frame keyframes structure for tracks, unlike get()
                     const collection = await jobInstance.annotations.export();
                     // collection = { shapes: [...], tracks: [...], tags: [...] }
 
                     const relationLabelDef = jobInstance.labels.find((l: any) => l.name.toLowerCase() === 'relation');
                     const relationLabelId = relationLabelDef ? relationLabelDef.id : null;
 
-                    // ====== 第二步：将 shapes 和 tracks 按 实体/关系 分类 ======
+                    // ====== Step 2: Separate shapes and tracks by Entity / Relation ======
                     const entityShapes: any[] = [];
                     const relationShapes: any[] = [];
                     (collection.shapes || []).forEach((s: any) => {
@@ -410,12 +410,12 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                         }
                     });
 
-                    // ====== 第三步：排序 - 实体在前，关系在后 ======
+                    // ====== Step 3: Sort - Entities first, Relations last ======
                     const sortedShapes = [...entityShapes, ...relationShapes];
                     const sortedTracks = [...entityTracks, ...relationTracks];
 
-                    // 构建旧 ID -> 新 Index 的映射 (基于合并后的完整顺序)
-                    // 所有实体排在前面，关系排在后面
+                    // Build Old ID -> New Index mapping (based on the merged order)
+                    // Entities go first, then Relation annotations
                     const allEntities = [...entityShapes, ...entityTracks];
                     const allRelations = [...relationShapes, ...relationTracks];
                     const lookupMap = new Map<number, number>();
@@ -434,9 +434,9 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                         newIdx++;
                     });
 
-                    setDebugInfo(`实体: ${allEntities.length}, 关系: ${allRelations.length}, 映射: ${lookupMap.size}`);
+                    setDebugInfo(`Entities: ${allEntities.length}, Relations: ${allRelations.length}, Map size: ${lookupMap.size}`);
 
-                    // ====== 第四步：修复关系的 subject_id / object_id 属性 ======
+                    // ====== Step 4: Fix subject_id / object_id attributes in Relations ======
                     if (relationLabelDef) {
                         const subjAttrDef = relationLabelDef.attributes.find((a: any) => a.name.toLowerCase() === 'subject_id');
                         const objAttrDef = relationLabelDef.attributes.find((a: any) => a.name.toLowerCase() === 'object_id');
@@ -459,13 +459,13 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                             });
                         };
 
-                        // 修复 shapes 中的关系
+                        // Fix relations in shapes
                         relationShapes.forEach((s: any) => fixAttrs(s.attributes));
-                        // 修复 tracks 中的关系 (track 级别属性)
+                        // Fix relations in tracks (track-level attributes)
                         relationTracks.forEach((t: any) => fixAttrs(t.attributes));
                     }
 
-                    // ====== 第五步：清除旧 id，让 CVAT 重新分配连续 serverID ======
+                    // ====== Step 5: Strip old IDs to force CVAT to assign new sequential serverIDs ======
                     const stripIds = (item: any) => {
                         delete item.id;
                         delete item.clientID;
@@ -486,8 +486,8 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                         return copy;
                     });
 
-                    // ====== 第六步：清空 + 导入 + 保存 + 刷新 ======
-                    setDebugInfo('正在清空数据库并注入排序后的新数据...');
+                    // ====== Step 6: Clear + Import + Save + Reload ======
+                    setDebugInfo('Clearing DB and injecting sorted data...');
 
                     await jobInstance.annotations.clear({ reload: false });
                     await jobInstance.annotations.import({
@@ -497,13 +497,13 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                     });
                     await jobInstance.annotations.save();
 
-                    setDebugInfo('操作完成！准备刷新页面...');
+                    setDebugInfo('Operation complete! Reloading page...');
                     setTimeout(() => {
                         window.location.reload();
                     }, 500);
                 } catch (error: any) {
                     console.error(error);
-                    Modal.error({ title: '清洗失败', content: error.message });
+                    Modal.error({ title: 'Wipe Failed', content: error.message });
                 } finally {
                     setLoading(false);
                 }
@@ -520,43 +520,43 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
             footer={null}
             bodyStyle={{ padding: 0, height: '700px', display: 'flex', flexDirection: 'column' }}
         >
-            {/* 原始标题栏与关闭等按钮 */}
+            {/* Header and Close buttons */}
             <div style={{ padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff' }}>
                 <div style={{ fontSize: '16px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <SyncOutlined spin={loading} style={{ marginRight: 4 }} />
-                    关系标注工具
+                    Relation Annotation Tool
                 </div>
                 <div>
                     <Button type="primary" danger onClick={handleWipeAndSync} style={{ marginRight: 8 }}>
-                        一键重排清洗
+                        Wipe & Sync
                     </Button>
-                    <Button onClick={onClose}>关闭</Button>
+                    <Button onClick={onClose}>Close</Button>
                 </div>
             </div>
 
-            {/* 独立一行：定制简易播放器控件 */}
+            {/* Custom Embedded Player Controls */}
             <div style={{ padding: '6px 24px', borderBottom: '1px solid #f0f0f0', background: '#fafafa', borderTop: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', maxWidth: 800 }}>
-                    {/* 左侧按键组 */}
+                    {/* Left button group */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                        <Tooltip title="跳到首帧">
+                        <Tooltip title="First Frame">
                             <Button type="text" size="small" icon={<FastBackwardOutlined />} onClick={() => onChangeFrame && onChangeFrame(jobInstance.startFrame)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} />
                         </Tooltip>
-                        <Tooltip title="上一帧 (D)">
+                        <Tooltip title="Previous Frame (D)">
                             <Button type="text" size="small" icon={<StepBackwardOutlined />} onClick={() => onChangeFrame && onChangeFrame(Math.max(jobInstance.startFrame, safeFrameNum - 1))} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} />
                         </Tooltip>
-                        <Tooltip title="播放/暂停 (Space)">
+                        <Tooltip title="Play/Pause (Space)">
                             <Button type="text" size="small" icon={playing ? <PauseOutlined /> : <CaretRightOutlined />} onClick={() => onSwitchPlay && onSwitchPlay(!playing)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} />
                         </Tooltip>
-                        <Tooltip title="下一帧 (F)">
+                        <Tooltip title="Next Frame (F)">
                             <Button type="text" size="small" icon={<StepForwardOutlined />} onClick={() => onChangeFrame && onChangeFrame(Math.min(jobInstance.stopFrame, safeFrameNum + 1))} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} />
                         </Tooltip>
-                        <Tooltip title="跳到尾帧">
+                        <Tooltip title="Last Frame">
                             <Button type="text" size="small" icon={<FastForwardOutlined />} onClick={() => onChangeFrame && onChangeFrame(jobInstance.stopFrame)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} />
                         </Tooltip>
                     </div>
 
-                    {/* 居中进度条 */}
+                    {/* Centered Slider */}
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
                         <Slider
                             style={{ width: '100%', margin: '0' }}
@@ -568,7 +568,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                         />
                     </div>
 
-                    {/* 右侧帧输入 */}
+                    {/* Right Frame Input */}
                     <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                         <InputNumber
                             size="small"
@@ -583,12 +583,12 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
             </div>
 
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                {/* 左侧对象列表 */}
+                {/* Left Object List */}
                 <div style={{ width: '280px', borderRight: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', background: '#fafafa' }}>
-                    {/* 搜索栏 */}
+                    {/* Search Bar */}
                     <div style={{ padding: '12px 12px 8px 12px', borderBottom: '1px solid #eee' }}>
                         <Input
-                            placeholder="搜索 ID / 标签 / ServerID"
+                            placeholder="Search ID / Label / ServerID"
                             prefix={<SearchOutlined style={{ color: '#ccc' }} />}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -604,7 +604,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                     <div style={{ flex: 1, overflowY: 'auto' }}>
                         <List
                             dataSource={filteredObjects}
-                            locale={{ emptyText: '无匹配对象' }}
+                            locale={{ emptyText: 'No matches found' }}
                             renderItem={item => {
                                 const isSelected = item.clientID === selectedSubjectClientID;
                                 const relCount = getRelationCount(item);
@@ -637,42 +637,42 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                     </div>
                 </div>
 
-                {/* 右侧操作区 */}
+                {/* Right Action Area */}
                 <div style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
                     {!selectedSubjectClientID ? (
                         <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#999', flexDirection: 'column' }}>
                             <AimOutlined style={{ fontSize: 40, marginBottom: 16, color: '#d9d9d9' }} />
-                            <span>请在左侧选择主体</span>
+                            <span>Please select a subject from the left panel</span>
                         </div>
                     ) : (
                         <>
                             <div style={{ marginBottom: 24, padding: '24px', background: '#fff', border: '1px solid #e8e8e8', borderRadius: '8px' }}>
-                                <h4 style={{ marginBottom: 20, fontWeight: 600 }}>新建关系</h4>
+                                <h4 style={{ marginBottom: 20, fontWeight: 600 }}>Create Relation</h4>
                                 <Form form={form} layout="vertical" initialValues={{ min_distance: 10.0 }}>
                                     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                                        <Form.Item label="主体" name="subject_client_id" style={{ flex: 1 }}>
+                                        <Form.Item label="Subject" name="subject_client_id" style={{ flex: 1 }}>
                                             <Select disabled options={getObjectOptions()} />
                                         </Form.Item>
                                         <div style={{ paddingTop: 35, color: '#bfbfbf' }}><RightOutlined /></div>
-                                        <Form.Item label="谓词" name="predicate" style={{ width: 140 }} rules={[{ required: true }]}>
+                                        <Form.Item label="Predicate" name="predicate" style={{ width: 140 }} rules={[{ required: true }]}>
                                             <Select
                                                 showSearch
-                                                placeholder="选择关系"
+                                                placeholder="Select Predicate"
                                                 options={predicateOptions.map(p => ({ label: p, value: p }))}
                                                 filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                                             />
                                         </Form.Item>
                                         <div style={{ paddingTop: 35, color: '#bfbfbf' }}><RightOutlined /></div>
-                                        <Form.Item label="客体" name="object_client_id" style={{ flex: 1 }} rules={[{ required: true }]}>
+                                        <Form.Item label="Object" name="object_client_id" style={{ flex: 1 }} rules={[{ required: true }]}>
                                             <Select
                                                 showSearch
-                                                placeholder="选择客体"
+                                                placeholder="Select Object"
                                                 options={getObjectOptions().filter(o => o.value !== selectedSubjectClientID)}
                                                 filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                                             />
                                         </Form.Item>
                                         <div style={{ paddingTop: 30 }}>
-                                            <Button type="primary" onClick={addRelation} icon={<PlusOutlined />}>添加</Button>
+                                            <Button type="primary" onClick={addRelation} icon={<PlusOutlined />}>Add</Button>
                                         </div>
                                     </div>
                                 </Form>
@@ -681,8 +681,8 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                             {newRelations.length > 0 && (
                                 <div style={{ marginBottom: 24, border: '1px dashed #1890ff', padding: 16, borderRadius: 6, background: '#f0f5ff' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                                        <span style={{ fontWeight: 'bold', color: '#1890ff' }}>待生成队列 ({newRelations.length})</span>
-                                        <Button type="primary" size="small" onClick={handleGenerate} loading={loading}>生成</Button>
+                                        <span style={{ fontWeight: 'bold', color: '#1890ff' }}>Generation Queue ({newRelations.length})</span>
+                                        <Button type="primary" size="small" onClick={handleGenerate} loading={loading}>Generate</Button>
                                     </div>
                                     <Table
                                         dataSource={newRelations}
@@ -705,18 +705,18 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                             )}
 
                             <div style={{ flex: 1 }}>
-                                <div style={{ marginBottom: 12, fontWeight: 'bold', color: '#333' }}>该对象已保存的关系 ({currentSubjectExistingRelations.length})</div>
+                                <div style={{ marginBottom: 12, fontWeight: 'bold', color: '#333' }}>Saved Relations for this object ({currentSubjectExistingRelations.length})</div>
                                 <Table
                                     dataSource={currentSubjectExistingRelations}
                                     rowKey="clientID"
                                     size="small"
                                     pagination={false}
-                                    locale={{ emptyText: '无' }}
+                                    locale={{ emptyText: 'None' }}
                                     columns={[
-                                        { title: '主体', dataIndex: 'displaySubjectLabel', width: '30%' },
-                                        { title: '谓词', dataIndex: 'predicate', render: t => <Tag>{t}</Tag> },
-                                        { title: '客体', dataIndex: 'displayObjectLabel', width: '30%' },
-                                        { title: '操作', render: (_, record) => <Button type="link" danger size="small" onClick={() => handleDeleteExisting(record)}>删除</Button> }
+                                        { title: 'Subject', dataIndex: 'displaySubjectLabel', width: '30%' },
+                                        { title: 'Predicate', dataIndex: 'predicate', render: t => <Tag>{t}</Tag> },
+                                        { title: 'Object', dataIndex: 'displayObjectLabel', width: '30%' },
+                                        { title: 'Action', render: (_, record) => <Button type="link" danger size="small" onClick={() => handleDeleteExisting(record)}>Delete</Button> }
                                     ]}
                                 />
                             </div>
@@ -726,7 +726,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
             </div>
 
             <Collapse ghost style={{ borderTop: '1px solid #eee' }}>
-                <Collapse.Panel header={<span style={{ fontSize: '11px', color: '#bbb' }}><BugOutlined /> 调试日志</span>} key="1">
+                <Collapse.Panel header={<span style={{ fontSize: '11px', color: '#bbb' }}><BugOutlined /> Debug Log</span>} key="1">
                     <pre style={{ fontSize: '10px', maxHeight: '120px', overflowY: 'auto', background: '#f8f8f8', padding: '8px', margin: 0 }}>{debugInfo}</pre>
                 </Collapse.Panel>
             </Collapse>

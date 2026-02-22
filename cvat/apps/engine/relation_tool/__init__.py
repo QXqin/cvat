@@ -1,9 +1,9 @@
-# Copyright (C) 2026 QXqin
+# Copyright (C) 2026 CVAT Relation Tool Contributors
 # SPDX-License-Identifier: MIT
 
 """
 CVAT Relation Auto Tool
-自动化关系标注生成工具
+Automated relationship annotation generation for CVAT.
 """
 
 __version__ = "1.0.0"
