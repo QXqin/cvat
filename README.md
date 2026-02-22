@@ -89,13 +89,27 @@ To use the tool, you **must** configure your original CVAT project labels correc
 
 ---
 
-## 🏗️ Build Instructions
+## 🏗️ Installation & Build Instructions | 安装与使用指南
 
-Standard CVAT building applies. Requires `yarn` and `Node.js`.
+### Option A: Use it as a Standalone Repository (直接使用本仓库)
+If you are starting fresh, simply clone this repository, switch to the `relation-auto-tool` branch, and build.
 
 ```bash
-cd cvat-ui
+git clone -b relation-auto-tool https://github.com/QXqin/cvat.git
+cd cvat/cvat-ui
 yarn install
+yarn run build
+```
+
+### Option B: Apply the Patch to your existing CVAT (补丁安装法)
+If you already have your own customized CVAT project and just want to add this Relation Tool feature, you don't need to merge the whole branch.
+Simply download the `cvat-relation-annotation-tool.patch` file from the root of this repository and apply it to your project.
+
+如果您已经有了自己的 CVAT 源码库，只需下载本项目根目录的 `cvat-relation-annotation-tool.patch` 文件，然后在您自己的 CVAT 根目录下运行：
+
+```bash
+git apply cvat-relation-annotation-tool.patch
+cd cvat-ui
 yarn run build
 ```
 
