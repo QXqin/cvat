@@ -1,4 +1,6 @@
 <div align="center">
+  <img src="https://raw.githubusercontent.com/cvat-ai/cvat/develop/site/content/en/images/cvat-readme-gif.gif" alt="CVAT Platform" width="100%" max-width="800px">
+
   <h1>🔗 CVAT 关系标注工具</h1>
   <p>基于 CVAT 的对象间关系标注扩展，内置 Track ID 归一化引擎与独立帧播放器。</p>
 

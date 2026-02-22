@@ -1,4 +1,6 @@
 <div align="center">
+  <img src="https://raw.githubusercontent.com/cvat-ai/cvat/develop/site/content/en/images/cvat-readme-gif.gif" alt="CVAT Platform" width="100%" max-width="800px">
+
   <h1>🔗 CVAT Relation Annotation Tool</h1>
   <p>A CVAT extension for inter-object relationship annotation with built-in track ID normalization and an embedded frame player.</p>
 
