@@ -35,14 +35,15 @@ Key capabilities include:
 
 ### 1. Embedded Frame Player
 A lightweight transport control layer built with Ant Design components (`Slider`, `Button`, `InputNumber`) is rendered inside the Relation dialog. It operates asynchronously from the main CVAT video player to guarantee CSS and DOM event isolation.
+<div align="center">
+  <img src="./assets/relation-ui.png" alt="Relation UI" width="80%" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+</div>
 
-| Hotkey | Action |
-|:---:|---|
-| <kbd>D</kbd> | Previous frame |
-| <kbd>F</kbd> | Next frame |
-| <kbd>C</kbd> | Jump back 10 frames |
-| <kbd>V</kbd> | Jump forward 10 frames |
-| <kbd>Space</kbd> | Play / Pause |
+| Hotkey | Action | Technical Implementation |
+|:---:|:---:|:---|
+| <kbd>D/F</kbd> | Previous frame / Next frame | Call underlying Frame Controller API |
+| <kbd>C/V</kbd> | Jump back 10 frames / Jump forward 10 frames | Intercept global Redux shortcuts to prevent main screen misoperation |
+| <kbd>Space</kbd> | Play / Pause | Intercept global Redux shortcut keys to prevent accidental touches on the home screen
 
 > **Technical Implementation:** Hotkeys are registered via `window.addEventListener('keydown', handler, true)` at the document capture phase with strict `e.stopPropagation()`. This explicitly bypasses CVAT's global React/Redux shortcut system to prevent conflicting actions. Listeners are automatically muted when standard `<input>` or `<textarea>` elements receive focus.
 
