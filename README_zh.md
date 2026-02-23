@@ -111,6 +111,11 @@ git apply cvat-relation-annotation-tool.patch
 cd cvat-ui
 yarn run build
 ```
+---
+
+## 附加文档
+
+- **[TransT 目标跟踪器部署教程](serverless/pytorch/dschoerk/transt/nuclio/DEPLOY_TRANST_zh.md)** — 将 TransT 目标跟踪器部署为 Serverless 函数，实现跨帧自动包围框追踪。
 
 ---
 

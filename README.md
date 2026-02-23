@@ -111,6 +111,11 @@ git apply cvat-relation-annotation-tool.patch
 cd cvat-ui
 yarn run build
 ```
+---
+
+## Additional Documentation
+
+- **[TransT Tracker Deployment Guide](serverless/pytorch/dschoerk/transt/nuclio/DEPLOY_TRANST.md)** — Deploy the TransT object tracker as a serverless function for automatic bounding box tracking across frames.
 
 ---
 

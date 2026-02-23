@@ -4,6 +4,8 @@ This document describes how to deploy the [TransT](https://github.com/dschoerk/T
 
 > **Target Environment**: Windows 10/11 + WSL2 + Docker Desktop + NVIDIA GPU
 
+[🇨🇳 简体中文](DEPLOY_TRANST_zh.md) | 🇺🇸 English
+
 ---
 
 ## Prerequisites
