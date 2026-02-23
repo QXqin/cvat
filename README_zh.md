@@ -91,6 +91,9 @@
 ---
 
 ## 🚀 使用流程
+<div align="center">
+  <img src="./assets/workflow.gif" alt="" width="80%" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+</div>
 
 1. 使用 CVAT 标准工具（矩形框、多边形等）标注目标对象（如 `Car`、`Pedestrian`）,TransT 辅助标注部署教程可参考：[TransT 自动追踪器部署方案](./serverless/pytorch/dschoerk/transt/nuclio/DEPLOY_TRANST_zh.md)。
 2. 点击左侧工具栏中的**关系标注图标**（或按 `R` 键）。

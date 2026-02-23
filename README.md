@@ -96,7 +96,9 @@ The tool mathematically links to an explicit target label named `Relation`. You 
 ---
 
 ## 🚀 Usage Guide
-
+<div align="center">
+  <img src="./assets/workflow.gif" alt="" width="80%" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+</div>
 1. **Base Annotation:** Annotate target objects (e.g., `Car`, `Pedestrian`) using standard CVAT primitives (bounding box, polygon, etc.). For the TransT assisted annotation deployment guide, please refer to: [TransT Tracker Deployment Guide](./serverless/pytorch/dschoerk/transt/nuclio/DEPLOY_TRANST.md).
 2. **Open Module:** Click the **Relation Tool icon** in the left sidebar control panel (Shortcut: <kbd>R</kbd>).
 3. **Select Entities:** In the dialog window, designate a **Subject** and an **Object** from the detected entity list.
