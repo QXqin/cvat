@@ -6,6 +6,92 @@ import { getCore } from 'cvat-core-wrapper';
 import { NavigationType, Workspace } from 'reducers';
 import { Row, Col } from 'antd/lib/grid';
 
+// ================= I18N Dictionary =================
+const I18N = {
+    en: {
+        title: 'Relation Annotation Tool',
+        wipeAndSync: 'Wipe & Sync',
+        close: 'Close',
+        firstFrame: 'First Frame',
+        prevFrame: 'Previous Frame (D)',
+        playPause: 'Play/Pause (Space)',
+        nextFrame: 'Next Frame (F)',
+        lastFrame: 'Last Frame',
+        searchPlaceholder: 'Search ID / Label / ServerID',
+        objects: 'Objects',
+        noMatches: 'No matches found',
+        selectSubject: 'Please select a subject from the left panel',
+        createRelation: 'Create Relation',
+        subject: 'Subject',
+        predicate: 'Predicate',
+        object: 'Object',
+        selectPredicate: 'Select Predicate',
+        selectObject: 'Select Object',
+        add: 'Add',
+        genQueue: 'Generation Queue',
+        generate: 'Generate',
+        savedRelations: 'Saved Relations for this object',
+        none: 'None',
+        action: 'Action',
+        delete: 'Delete',
+        debugLog: 'Debug Log',
+        warningSameValue: 'Subject and object cannot be the same',
+        errorNotSaved: 'Objects not saved. Please save first (Ctrl+S)',
+        warningExists: 'This relation already exists in the queue',
+        addedToQueue: 'Added to queue',
+        markedDeletion: 'Marked for deletion',
+        deletionFailed: 'Deletion failed',
+        genCommandSent: 'Generation command sent',
+        genFailed: 'Generation failed:',
+        confirmWipeTitle: 'Confirm Wipe & Sync?',
+        confirmWipeContent: 'This will collect all annotations in the current job, flatten them into a continuous ID space, re-sort them (shapes first, relations last), and forcibly re-import to flush CVAT\'s backend sequential IDs. Note: old serverIDs will be invalidated.',
+        confirmWipeOk: 'Confirm Wipe & Sync',
+        cancel: 'Cancel',
+        wipeFailed: 'Wipe Failed'
+    },
+    zh: {
+        title: '关系标注工具',
+        wipeAndSync: ' 一键重排清洗(Wipe & Sync)',
+        close: '关闭',
+        firstFrame: '第一帧',
+        prevFrame: '上一帧 (D)',
+        playPause: '播放/暂停 (Space)',
+        nextFrame: '下一帧 (F)',
+        lastFrame: '最后一帧',
+        searchPlaceholder: '搜索 ID / 标签 / ServerID',
+        objects: '可用对象',
+        noMatches: '未找到匹配项',
+        selectSubject: '请从左侧面板选择一个主体',
+        createRelation: '创建关系',
+        subject: '主体 (Subject)',
+        predicate: '谓词 (Predicate)',
+        object: '客体 (Object)',
+        selectPredicate: '选择谓词',
+        selectObject: '选择客体',
+        add: '添加',
+        genQueue: '生成队列',
+        generate: '生成',
+        savedRelations: '该对象的已存关系',
+        none: '无',
+        action: '操作',
+        delete: '删除',
+        debugLog: '调试日志',
+        warningSameValue: '主体和客体不能是同一个对象',
+        errorNotSaved: '对象尚未保存。请先保存(Ctrl+S)',
+        warningExists: '该关系已存在于队列中',
+        addedToQueue: '已添加到队列',
+        markedDeletion: '已标记为删除',
+        deletionFailed: '删除失败',
+        genCommandSent: '生成命令已发送',
+        genFailed: '生成失败:',
+        confirmWipeTitle: '确认执行 Wipe & Sync？',
+        confirmWipeContent: '此操作将收集当前任务的所有标注，将其 ID 映射到连续空间，并重新导入 CVAT 以消除 ID 碎片。注意：这会导致旧的 Server ID 失效。',
+        confirmWipeOk: '确认清洗',
+        cancel: '取消',
+        wipeFailed: '清洗失败'
+    }
+};
+
 // ================= Type Definitions =================
 
 interface AnnotationObject {
@@ -84,6 +170,9 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
     const [debugInfo, setDebugInfo] = useState<string>('');
     // Dynamically loaded predicate options
     const [predicateOptions, setPredicateOptions] = useState<string[]>([]);
+    // I18N State
+    const [lang, setLang] = useState<'en' | 'zh'>('zh');
+    const t = (key: keyof typeof I18N.en) => I18N[lang][key];
 
     const safeFrameNum = typeof currentFrame === 'object' && currentFrame !== null
         ? currentFrame.number
@@ -270,7 +359,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                 const { subject_client_id, object_client_id, predicate } = values;
 
                 if (subject_client_id === object_client_id) {
-                    message.warning('Subject and object cannot be the same');
+                    message.warning(t('warningSameValue'));
                     return;
                 }
 
@@ -280,7 +369,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                 if (!subjObj || !objObj) return;
 
                 if (subjObj.serverID === null || objObj.serverID === null) {
-                    message.error('Objects not saved. Please save first (Ctrl+S)');
+                    message.error(t('errorNotSaved'));
                     return;
                 }
 
@@ -294,7 +383,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                 );
 
                 if (exists) {
-                    message.warning('This relation already exists in the queue');
+                    message.warning(t('warningExists'));
                     return;
                 }
 
@@ -311,17 +400,17 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
 
                 setNewRelations([...newRelations, newRel]);
                 form.resetFields(['object_client_id']);
-                message.success('Added to queue');
+                message.success(t('addedToQueue'));
             });
     };
 
     const handleDeleteExisting = async (record: ExistingRelation) => {
         try {
             record.annotationObject.delete();
-            message.success('Marked for deletion');
+            message.success(t('markedDeletion'));
             setExistingRelations(prev => prev.filter(item => item.clientID !== record.clientID));
         } catch (error) {
-            message.error('Deletion failed');
+            message.error(t('deletionFailed'));
         }
     };
 
@@ -341,11 +430,11 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                 _object_display_label: rel._object_display_label,
             }));
             await onGenerate(payload, minDistance);
-            message.success('Generation command sent');
+            message.success(t('genCommandSent'));
             setNewRelations([]);
             setTimeout(loadAnnotations, 800);
         } catch (error: any) {
-            message.error(`Generation failed: ${error.message}`);
+            message.error(`${t('genFailed')} ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -371,11 +460,11 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
 
     const handleWipeAndSync = async () => {
         Modal.confirm({
-            title: 'Confirm Wipe & Sync?',
-            content: 'This will collect all annotations in the current job, flatten them into a continuous ID space, re-sort them (shapes first, relations last), and forcibly re-import to flush CVAT\'s backend sequential IDs. Note: old serverIDs will be invalidated.',
-            okText: 'Confirm Wipe & Sync',
+            title: t('confirmWipeTitle'),
+            content: t('confirmWipeContent'),
+            okText: t('confirmWipeOk'),
             okType: 'danger',
-            cancelText: 'Cancel',
+            cancelText: t('cancel'),
             onOk: async () => {
                 try {
                     setLoading(true);
@@ -503,7 +592,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                     }, 500);
                 } catch (error: any) {
                     console.error(error);
-                    Modal.error({ title: 'Wipe Failed', content: error.message });
+                    Modal.error({ title: t('wipeFailed'), content: error.message });
                 } finally {
                     setLoading(false);
                 }
@@ -524,13 +613,14 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
             <div style={{ padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff' }}>
                 <div style={{ fontSize: '16px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <SyncOutlined spin={loading} style={{ marginRight: 4 }} />
-                    Relation Annotation Tool
+                    {t('title')}
                 </div>
-                <div>
-                    <Button type="primary" danger onClick={handleWipeAndSync} style={{ marginRight: 8 }}>
-                        Wipe & Sync
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Button size="small" onClick={() => setLang(lang === 'en' ? 'zh' : 'en')} style={{ fontWeight: 'bold', color: lang === 'zh' ? '#1890ff' : '#666' }}>中 / EN</Button>
+                    <Button type="primary" danger onClick={handleWipeAndSync}>
+                        {t('wipeAndSync')}
                     </Button>
-                    <Button onClick={onClose}>Close</Button>
+                    <Button onClick={onClose}>{t('close')}</Button>
                 </div>
             </div>
 
@@ -539,19 +629,19 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', maxWidth: 800 }}>
                     {/* Left button group */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                        <Tooltip title="First Frame">
+                        <Tooltip title={t('firstFrame')}>
                             <Button type="text" size="small" icon={<FastBackwardOutlined />} onClick={() => onChangeFrame && onChangeFrame(jobInstance.startFrame)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} />
                         </Tooltip>
-                        <Tooltip title="Previous Frame (D)">
+                        <Tooltip title={t('prevFrame')}>
                             <Button type="text" size="small" icon={<StepBackwardOutlined />} onClick={() => onChangeFrame && onChangeFrame(Math.max(jobInstance.startFrame, safeFrameNum - 1))} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} />
                         </Tooltip>
-                        <Tooltip title="Play/Pause (Space)">
+                        <Tooltip title={t('playPause')}>
                             <Button type="text" size="small" icon={playing ? <PauseOutlined /> : <CaretRightOutlined />} onClick={() => onSwitchPlay && onSwitchPlay(!playing)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} />
                         </Tooltip>
-                        <Tooltip title="Next Frame (F)">
+                        <Tooltip title={t('nextFrame')}>
                             <Button type="text" size="small" icon={<StepForwardOutlined />} onClick={() => onChangeFrame && onChangeFrame(Math.min(jobInstance.stopFrame, safeFrameNum + 1))} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} />
                         </Tooltip>
-                        <Tooltip title="Last Frame">
+                        <Tooltip title={t('lastFrame')}>
                             <Button type="text" size="small" icon={<FastForwardOutlined />} onClick={() => onChangeFrame && onChangeFrame(jobInstance.stopFrame)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} />
                         </Tooltip>
                     </div>
@@ -588,7 +678,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                     {/* Search Bar */}
                     <div style={{ padding: '12px 12px 8px 12px', borderBottom: '1px solid #eee' }}>
                         <Input
-                            placeholder="Search ID / Label / ServerID"
+                            placeholder={t('searchPlaceholder')}
                             prefix={<SearchOutlined style={{ color: '#ccc' }} />}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -596,7 +686,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                             size="small"
                         />
                         <div style={{ marginTop: 8, color: '#888', fontSize: '12px', display: 'flex', justifyContent: 'space-between' }}>
-                            <span>Objects</span>
+                            <span>{t('objects')}</span>
                             <span>{filteredObjects.length} / {availableObjects.length}</span>
                         </div>
                     </div>
@@ -604,7 +694,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                     <div style={{ flex: 1, overflowY: 'auto' }}>
                         <List
                             dataSource={filteredObjects}
-                            locale={{ emptyText: 'No matches found' }}
+                            locale={{ emptyText: t('noMatches') }}
                             renderItem={item => {
                                 const isSelected = item.clientID === selectedSubjectClientID;
                                 const relCount = getRelationCount(item);
@@ -642,37 +732,37 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                     {!selectedSubjectClientID ? (
                         <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#999', flexDirection: 'column' }}>
                             <AimOutlined style={{ fontSize: 40, marginBottom: 16, color: '#d9d9d9' }} />
-                            <span>Please select a subject from the left panel</span>
+                            <span>{t('selectSubject')}</span>
                         </div>
                     ) : (
                         <>
                             <div style={{ marginBottom: 24, padding: '24px', background: '#fff', border: '1px solid #e8e8e8', borderRadius: '8px' }}>
-                                <h4 style={{ marginBottom: 20, fontWeight: 600 }}>Create Relation</h4>
+                                <h4 style={{ marginBottom: 20, fontWeight: 600 }}>{t('createRelation')}</h4>
                                 <Form form={form} layout="vertical" initialValues={{ min_distance: 10.0 }}>
                                     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                                        <Form.Item label="Subject" name="subject_client_id" style={{ flex: 1 }}>
+                                        <Form.Item label={t('subject')} name="subject_client_id" style={{ flex: 1 }}>
                                             <Select disabled options={getObjectOptions()} />
                                         </Form.Item>
                                         <div style={{ paddingTop: 35, color: '#bfbfbf' }}><RightOutlined /></div>
-                                        <Form.Item label="Predicate" name="predicate" style={{ width: 140 }} rules={[{ required: true }]}>
+                                        <Form.Item label={t('predicate')} name="predicate" style={{ width: 140 }} rules={[{ required: true }]}>
                                             <Select
                                                 showSearch
-                                                placeholder="Select Predicate"
+                                                placeholder={t('selectPredicate')}
                                                 options={predicateOptions.map(p => ({ label: p, value: p }))}
                                                 filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                                             />
                                         </Form.Item>
                                         <div style={{ paddingTop: 35, color: '#bfbfbf' }}><RightOutlined /></div>
-                                        <Form.Item label="Object" name="object_client_id" style={{ flex: 1 }} rules={[{ required: true }]}>
+                                        <Form.Item label={t('object')} name="object_client_id" style={{ flex: 1 }} rules={[{ required: true }]}>
                                             <Select
                                                 showSearch
-                                                placeholder="Select Object"
+                                                placeholder={t('selectObject')}
                                                 options={getObjectOptions().filter(o => o.value !== selectedSubjectClientID)}
                                                 filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                                             />
                                         </Form.Item>
                                         <div style={{ paddingTop: 30 }}>
-                                            <Button type="primary" onClick={addRelation} icon={<PlusOutlined />}>Add</Button>
+                                            <Button type="primary" onClick={addRelation} icon={<PlusOutlined />}>{t('add')}</Button>
                                         </div>
                                     </div>
                                 </Form>
@@ -681,8 +771,8 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                             {newRelations.length > 0 && (
                                 <div style={{ marginBottom: 24, border: '1px dashed #1890ff', padding: 16, borderRadius: 6, background: '#f0f5ff' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                                        <span style={{ fontWeight: 'bold', color: '#1890ff' }}>Generation Queue ({newRelations.length})</span>
-                                        <Button type="primary" size="small" onClick={handleGenerate} loading={loading}>Generate</Button>
+                                        <span style={{ fontWeight: 'bold', color: '#1890ff' }}>{t('genQueue')} ({newRelations.length})</span>
+                                        <Button type="primary" size="small" onClick={handleGenerate} loading={loading}>{t('generate')}</Button>
                                     </div>
                                     <Table
                                         dataSource={newRelations}
@@ -705,18 +795,18 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
                             )}
 
                             <div style={{ flex: 1 }}>
-                                <div style={{ marginBottom: 12, fontWeight: 'bold', color: '#333' }}>Saved Relations for this object ({currentSubjectExistingRelations.length})</div>
+                                <div style={{ marginBottom: 12, fontWeight: 'bold', color: '#333' }}>{t('savedRelations')} ({currentSubjectExistingRelations.length})</div>
                                 <Table
                                     dataSource={currentSubjectExistingRelations}
                                     rowKey="clientID"
                                     size="small"
                                     pagination={false}
-                                    locale={{ emptyText: 'None' }}
+                                    locale={{ emptyText: t('none') }}
                                     columns={[
-                                        { title: 'Subject', dataIndex: 'displaySubjectLabel', width: '30%' },
-                                        { title: 'Predicate', dataIndex: 'predicate', render: t => <Tag>{t}</Tag> },
-                                        { title: 'Object', dataIndex: 'displayObjectLabel', width: '30%' },
-                                        { title: 'Action', render: (_, record) => <Button type="link" danger size="small" onClick={() => handleDeleteExisting(record)}>Delete</Button> }
+                                        { title: t('subject'), dataIndex: 'displaySubjectLabel', width: '30%' },
+                                        { title: t('predicate'), dataIndex: 'predicate', render: t => <Tag>{t}</Tag> },
+                                        { title: t('object'), dataIndex: 'displayObjectLabel', width: '30%' },
+                                        { title: t('action'), render: (_, record) => <Button type="link" danger size="small" onClick={() => handleDeleteExisting(record)}>{t('delete')}</Button> }
                                     ]}
                                 />
                             </div>
@@ -726,7 +816,7 @@ const RelationDialog: React.FC<RelationDialogProps> = ({
             </div>
 
             <Collapse ghost style={{ borderTop: '1px solid #eee' }}>
-                <Collapse.Panel header={<span style={{ fontSize: '11px', color: '#bbb' }}><BugOutlined /> Debug Log</span>} key="1">
+                <Collapse.Panel header={<span style={{ fontSize: '11px', color: '#bbb' }}><BugOutlined /> {t('debugLog')}</span>} key="1">
                     <pre style={{ fontSize: '10px', maxHeight: '120px', overflowY: 'auto', background: '#f8f8f8', padding: '8px', margin: 0 }}>{debugInfo}</pre>
                 </Collapse.Panel>
             </Collapse>

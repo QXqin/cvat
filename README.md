@@ -1,59 +1,69 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/cvat-ai/cvat/develop/site/content/en/images/cvat-readme-gif.gif" alt="CVAT Platform" width="100%" max-width="800px">
+  <img src="https://raw.githubusercontent.com/cvat-ai/cvat/develop/site/content/en/images/cvat-readme-gif.gif" alt="CVAT Platform" width="100%" style="max-width: 800px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
 
   <h1>🔗 CVAT Relation Annotation Tool</h1>
-  <p>A CVAT extension for inter-object relationship annotation with built-in track ID normalization and an embedded frame player.</p>
+  <p><strong>A CVAT extension for inter-object relationship annotation with built-in track ID normalization and an embedded frame player.</strong></p>
 
-  [🇨🇳 简体中文](README_zh.md) | 🇺🇸 English
+  <p>
+    <a href="https://github.com/cvat-ai/cvat"><img src="https://img.shields.io/badge/upstream-cvat-blue.svg?logo=github&style=flat-square" alt="Upstream CVAT" /></a>
+    <img src="https://img.shields.io/badge/frontend-React%20%7C%20AntD-61DAFB.svg?logo=react&style=flat-square" alt="Frontend: React" />
+    <img src="https://img.shields.io/badge/backend-Python%20%7C%20Django-3776AB.svg?logo=python&style=flat-square" alt="Backend: Python" />
+    <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License: MIT" /></a>
+  </p>
+
+  <p>
+    [🇨🇳 简体中文](README_zh.md) | 🇺🇸 English
+  </p>
 </div>
 
 <br/>
 
-## Overview
+## 📖 Overview
 
 The official [CVAT](https://github.com/cvat-ai/cvat) provides robust tools for object detection and tracking annotation. However, it lacks native support for annotating **semantic relationships between objects** (e.g., `person — riding — bicycle`) across video frames.
 
-This fork adds a **Relation Annotation Tool** that addresses this gap. Key capabilities include:
+This fork introduces the **Relation Annotation Tool**, an extension that addresses this gap while resolving core engineering challenges associated with the native CVAT APIs.
 
-- **Relationship triplet creation** (Subject → Predicate → Object) via a dedicated UI panel.
-- **Embedded frame player** within the annotation dialog, fully isolated from the main CVAT player.
-- **One-click Track ID normalization engine** that resolves ID fragmentation and keyframe collision issues caused by the native `.get()` / `.put()` annotation API.
+Key capabilities include:
+- **Relationship Triplet Creation:** Define `Subject → Predicate → Object` vectors via a dedicated UI panel.
+- **Embedded UI Isolation:** Features a built-in frame player within the annotation dialog, fully isolated from the main CVAT player to prevent event collision.
+- **Data Normalization Engine:** Implements a one-click Track ID normalization algorithm resolving ID fragmentation and keyframe collision issues natively caused by the `.get()` and `.put()` API hooks.
 
 ---
 
-## Features
+## ✨ Core Features
 
 ### 1. Embedded Frame Player
-A lightweight player built with Ant Design components (`Slider`, `Button`, `InputNumber`) is rendered inside the Relation dialog. It operates independently from the main CVAT player to prevent CSS and event conflicts.
+A lightweight transport control layer built with Ant Design components (`Slider`, `Button`, `InputNumber`) is rendered inside the Relation dialog. It operates asynchronously from the main CVAT video player to guarantee CSS and DOM event isolation.
 
 | Hotkey | Action |
-|--------|--------|
-| `D` | Previous frame |
-| `F` | Next frame |
-| `C` | Back 10 frames |
-| `V` | Forward 10 frames |
-| `Space` | Play / Pause |
+|:---:|---|
+| <kbd>D</kbd> | Previous frame |
+| <kbd>F</kbd> | Next frame |
+| <kbd>C</kbd> | Jump back 10 frames |
+| <kbd>V</kbd> | Jump forward 10 frames |
+| <kbd>Space</kbd> | Play / Pause |
 
-Hotkeys are registered via `window.addEventListener('keydown', handler, true)` at the capture phase, with `stopPropagation()` to avoid interference with CVAT's global Redux shortcut system. Listeners are automatically disabled when an `<input>` or `<textarea>` element is focused.
+> **Technical Implementation:** Hotkeys are registered via `window.addEventListener('keydown', handler, true)` at the document capture phase with strict `e.stopPropagation()`. This explicitly bypasses CVAT's global React/Redux shortcut system to prevent conflicting actions. Listeners are automatically muted when standard `<input>` or `<textarea>` elements receive focus.
 
 ### 2. Track ID Normalization (Wipe & Sync)
-Over extended annotation sessions, Track IDs may become non-sequential or collide due to repeated merge/split operations. The "Wipe & Sync" function resolves this by:
+Extended annotation sessions involving merge/split operations inevitably lead to non-sequential, fragmented Track IDs and severe data collision. The "Wipe & Sync" function performs automatic database realignment via the following pipeline:
 
-1. Exporting all annotations via `annotations.export()` (preserving full keyframe data).
-2. Re-mapping all IDs to a continuous sequence in memory.
-3. Clearing existing annotations and re-importing the normalized dataset via `annotations.import()`.
-4. Persisting the result to the server via `annotations.save()`.
+1. **Serialization:** Exports all annotations via `annotations.export()` (preserving full multi-frame keypoint metadata).
+2. **Re-indexing:** Maps all IDs sequentially in memory, guaranteeing collision-free ID allocation (Entities prioritized, Relations appended).
+3. **Database Flush:** Clears the active database state via `annotations.clear()`, subsequently injecting the normalized matrix via `annotations.import()`.
+4. **Persistence:** Commits the transaction to the backend database via `annotations.save()`.
 
-This approach avoids the frame-flattening side effects of the standard `annotations.get()` / `annotations.put()` cycle.
+*This pipeline circumvents the critical frame-flattening side effect inherent to standard `annotations.get()`/`put()` sequential loops.*
 
 ### 3. Queue-based Batch Generation
-Multiple relationship triplets can be queued before committing. Each generated relation is stored as a `TRACK` of type `POINTS`, positioned at the subject's bounding box center. The track automatically terminates (sets `outside = true`) when either the subject or object disappears from the frame.
+Supports queuing multiple relationship triplets prior to submission. Each validated relation is persisted as a continuous `TRACK` composed of `POINTS`, mathematically projected to the bounding box center of the target Subject. The logical track is automatically terminated (attribute `outside = true` set) when either participating entity exits the spatial frame.
 
 ---
 
-## Prerequisites: CVAT Project Label Configuration
+## ⚙️ Configuration: Label Schema
 
-The tool requires a label named `Relation` with three specific attributes. Add the following to your Project or Task label configuration via the **Raw** JSON editor:
+The tool mathematically links to an explicit target label named `Relation`. You must provision this label and its precise attributes in your Project or Task configuration. Paste the following configuration directly into the **Raw JSON** editor during project creation:
 
 ```json
 [
@@ -66,7 +76,7 @@ The tool requires a label named `Relation` with three specific attributes. Add t
         "mutable": true,
         "input_type": "select",
         "default_value": "near",
-        "values": ["near", "holding", "riding", "wearing", "next_to", "behind"]
+        "values": ["near", "holding", "riding", "wearing", "next_to", "behind", "in_front_of"]
       },
       { "name": "subject_id", "mutable": true, "input_type": "text", "default_value": "", "values": [] },
       { "name": "object_id", "mutable": true, "input_type": "text", "default_value": "", "values": [] }
@@ -75,25 +85,25 @@ The tool requires a label named `Relation` with three specific attributes. Add t
 ]
 ```
 
-> **Note:** The `predicate.values` array defines the available relationship types in the UI dropdown. Modify this list to match your annotation schema.
+> **Note:** The `predicate.values` array defines the allowed ontology mapping in the user interface. You are encouraged to modify this array to suit your specific dataset taxonomy.
 
 ---
 
-## Usage
+## 🚀 Usage Guide
 
-1. Annotate objects (e.g., `Car`, `Pedestrian`) using standard CVAT tools (bounding boxes, polygons, etc.).
-2. Click the **Relation Tool icon** in the left sidebar (or press `R`).
-3. In the Relation dialog, select a **Subject** and an **Object** from the annotation list.
-4. Choose a **Predicate** from the dropdown menu.
-5. Click **Insert** to add the triplet to the generation queue.
-6. Click **Generate** to create the relationship tracks.
-7. Use `[D]` / `[F]` to step through frames and verify the generated tracks.
+1. **Base Annotation:** Annotate target objects (e.g., `Car`, `Pedestrian`) using standard CVAT primitives (bounding box, polygon, etc.).
+2. **Open Module:** Click the **Relation Tool icon** in the left sidebar control panel (Shortcut: <kbd>R</kbd>).
+3. **Select Entities:** In the dialog window, designate a **Subject** and an **Object** from the detected entity list.
+4. **Map Predicate:** Select an active **Predicate** from the ontology dropdown.
+5. **Queue Triplet:** Click **Add / Insert** to push the triplet into the local generation queue.
+6. **Compile:** Click **Generate** to commit the queue and mathematically construct the relationship tracks in CVAT memory.
+7. **Verification:** Utilize <kbd>D</kbd> and <kbd>F</kbd> to step linearly through the timeline to verify algorithmic track assignment.
 
 ---
 
-## Installation
+## 📦 Installation Options
 
-### Option A: Clone this repository
+### Option A: Clone the Repository Directly
 
 ```bash
 git clone -b relation-auto-tool https://github.com/QXqin/cvat.git
@@ -102,25 +112,26 @@ yarn install
 yarn run build
 ```
 
-### Option B: Apply as a patch to an existing CVAT installation
+### Option B: Apply Local Patch to Existing Environment
 
-Download `cvat-relation-annotation-tool.patch` from the repository root and apply it:
+Download the `cvat-relation-annotation-tool.patch` architecture patch from the repository root and apply it sequentially:
 
 ```bash
 git apply cvat-relation-annotation-tool.patch
 cd cvat-ui
 yarn run build
 ```
----
-
-## Additional Documentation
-
-- **[TransT Tracker Deployment Guide](serverless/pytorch/dschoerk/transt/nuclio/DEPLOY_TRANST.md)** — Deploy the TransT object tracker as a serverless function for automatic bounding box tracking across frames.
 
 ---
 
-## License
+## 📚 Additional Documentation
 
-This project is a fork of [cvat-ai/cvat](https://github.com/cvat-ai/cvat) and is distributed under the **[MIT License](https://opensource.org/licenses/MIT)**.
+- **[TransT Tracker Deployment Guide](serverless/pytorch/dschoerk/transt/nuclio/DEPLOY_TRANST.md)** — Deploy the TransT object tracker as a serverless function to automate frame-by-frame bounding box tracking.
 
-All original CVAT copyright notices are retained per the terms of the license.
+---
+
+## 📜 License
+
+This software architecture represents a localized fork of [cvat-ai/cvat](https://github.com/cvat-ai/cvat). It is published and distributed under the terms of the **[MIT License](https://opensource.org/licenses/MIT)**.
+
+All original CVAT copyright notices, warranties, and liability clauses are retained structurally strictly in accordance with the terms of the applicable MIT License.
