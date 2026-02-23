@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/cvat-ai/cvat/develop/site/content/en/images/cvat-readme-gif.gif" alt="CVAT Platform" width="100%" style="max-width: 800px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
 
   <h1>🔗 CVAT Relation Annotation Tool</h1>
-  <p><strong>A CVAT extension for inter-object relationship annotation with built-in track ID normalization and an embedded frame player.</strong></p>
+  <p><strong>This repository is a deep secondary development fork based on the official CVAT, designed to solve the challenges of Scene Graph and cross-frame object relationship annotation in large-scale video annotation tasks.</strong></p>
 
   <p>
     <a href="https://github.com/cvat-ai/cvat"><img src="https://img.shields.io/badge/upstream-cvat-blue.svg?logo=github&style=flat-square" alt="Upstream CVAT" /></a>
@@ -11,9 +11,9 @@
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License: MIT" /></a>
   </p>
 
-  <p>
-    [🇨🇳 简体中文](README_zh.md) | 🇺🇸 English
-  </p>
+
+  [🇨🇳 简体中文](README_zh.md) | 🇺🇸 English
+
 </div>
 
 <br/>
@@ -54,10 +54,15 @@ Extended annotation sessions involving merge/split operations inevitably lead to
 3. **Database Flush:** Clears the active database state via `annotations.clear()`, subsequently injecting the normalized matrix via `annotations.import()`.
 4. **Persistence:** Commits the transaction to the backend database via `annotations.save()`.
 
-*This pipeline circumvents the critical frame-flattening side effect inherent to standard `annotations.get()`/`put()` sequential loops.*
+*This pipeline circumvents the ID corruption issues that can occur when re-importing annotation files.*
 
 ### 3. Queue-based Batch Generation
 Supports queuing multiple relationship triplets prior to submission. Each validated relation is persisted as a continuous `TRACK` composed of `POINTS`, mathematically projected to the bounding box center of the target Subject. The logical track is automatically terminated (attribute `outside = true` set) when either participating entity exits the spatial frame.
+
+### 4. Technical Architecture
+*(Reserved: Insert an architectural diagram illustrating how the `Relation Dialog` mounts onto the native CVAT `StandardWorkspace` React component tree and Redux state interception mechanisms.)*
+- **UI Injection:** Custom action buttons are registered within `cvat-ui/src/containers/annotation-page/standard-workspace/controls-side-bar`.
+- **State Management:** Maintains isolated component State to prevent polluting the CVAT global Redux store, triggering transactional queries to the core API only upon invoking a "Wipe & Sync".
 
 ---
 
@@ -91,7 +96,7 @@ The tool mathematically links to an explicit target label named `Relation`. You 
 
 ## 🚀 Usage Guide
 
-1. **Base Annotation:** Annotate target objects (e.g., `Car`, `Pedestrian`) using standard CVAT primitives (bounding box, polygon, etc.).
+1. **Base Annotation:** Annotate target objects (e.g., `Car`, `Pedestrian`) using standard CVAT primitives (bounding box, polygon, etc.). For the TransT assisted annotation deployment guide, please refer to: [TransT Tracker Deployment Guide](./serverless/pytorch/dschoerk/transt/nuclio/DEPLOY_TRANST.md).
 2. **Open Module:** Click the **Relation Tool icon** in the left sidebar control panel (Shortcut: <kbd>R</kbd>).
 3. **Select Entities:** In the dialog window, designate a **Subject** and an **Object** from the detected entity list.
 4. **Map Predicate:** Select an active **Predicate** from the ontology dropdown.
@@ -102,6 +107,9 @@ The tool mathematically links to an explicit target label named `Relation`. You 
 ---
 
 ## 📦 Installation Options
+
+> **⚠️ Version Compatibility Warning:**
+> This extension was developed against **CVAT v2.56.2**. Due to serialization and deserialization routines interacting directly with the underlying annotation matrix, it is highly recommended to apply this patch to equivalent or compatible versions.
 
 ### Option A: Clone the Repository Directly
 
@@ -135,3 +143,6 @@ yarn run build
 This software architecture represents a localized fork of [cvat-ai/cvat](https://github.com/cvat-ai/cvat). It is published and distributed under the terms of the **[MIT License](https://opensource.org/licenses/MIT)**.
 
 All original CVAT copyright notices, warranties, and liability clauses are retained structurally strictly in accordance with the terms of the applicable MIT License.
+
+## 🛠 Development Notes
+The core logic and documentation of this project are developer-led. Part of the code and architectural optimization was assisted by Large Language Models (LLMs) such as **Gemini / Claude**, aiming to improve development efficiency and code robustness.
