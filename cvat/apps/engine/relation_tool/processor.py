@@ -408,7 +408,7 @@ class RelationProcessor:
                 created_annotations.append(annotation)
 
             except Exception as e:
-                logger.exception(f"Error processing relation: {spec_dict}")
+                logger.exception("Error processing relation: %s", spec_dict)
                 errors.append({'relation': spec_dict, 'error': str(e)})
 
         return {

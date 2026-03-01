@@ -1,4 +1,5 @@
-// relation-algorithms.ts
+// Copyright (C) 2026 CVAT Relation Tool Contributors
+// SPDX-License-Identifier: MIT
 
 interface Point {
     x: number;
@@ -15,19 +16,24 @@ interface Box {
 }
 
 /**
- * 职责: 管理每帧已占用的关系点坐标，防止新生成的关系点重叠。
+ * Responsibility: Manage occupied relation point coordinates per frame
+ * to prevent overlapping of newly generated relation points.
  */
 export class PositionManager {
-    // 维护字典: {frame_id: string -> Point[]}
-    // key 是 frame number, value 是该帧所有已占用的点列表
+    // Dictionary mapping: {frame_id: number -> Point[]}
+    // key is frame number, value is the list of all occupied points in that frame
     private occupiedPositions: Map<number, Point[]> = new Map();
 
     constructor() {
-        // 前端初始化时为空，后续在生成过程中动态添加，或者预先扫描当前帧的已有标注
+        // Initialized empty on the frontend, dynamically added during generation,
+        // or pre-scanned from existing annotations in the current frame.
     }
 
     /**
-     * 注册一个已占用的点
+     * Register an occupied point.
+     * @param frame The frame number
+     * @param x The X coordinate
+     * @param y The Y coordinate
      */
     addPosition(frame: number, x: number, y: number) {
         if (!this.occupiedPositions.has(frame)) {
@@ -37,7 +43,12 @@ export class PositionManager {
     }
 
     /**
-     * 检查新坐标是否有效（碰撞检测）
+     * Check if new coordinates are valid (collision detection).
+     * @param frame The frame number
+     * @param x The X coordinate to check
+     * @param y The Y coordinate to check
+     * @param minDistance The minimum required distance from existing points
+     * @returns True if valid (no collision), false otherwise
      */
     isPositionValid(frame: number, x: number, y: number, minDistance: number): boolean {
         const existingPoints = this.occupiedPositions.get(frame);
@@ -46,10 +57,10 @@ export class PositionManager {
         }
 
         for (const p of existingPoints) {
-            // 计算欧几里得距离
+            // Calculate Euclidean distance
             const distance = Math.sqrt(Math.pow(p.x - x, 2) + Math.pow(p.y - y, 2));
             if (distance < minDistance) {
-                return false; // 冲突
+                return false; // Collision detected
             }
         }
         return true;
@@ -57,10 +68,14 @@ export class PositionManager {
 }
 
 /**
- * 计算 9 个候选坐标 (优先级递减)
- * 1. 中心点
- * 2. 四角（左上、右上、左下、右下）
- * 3. 四边中点（上、下、左、右）
+ * Calculate 9 candidate coordinates (in decreasing priority order).
+ * 1. Center point
+ * 2. Four corners (Top-Left, Top-Right, Bottom-Left, Bottom-Right)
+ * 3. Four edge midpoints (Top, Bottom, Left, Right)
+ *
+ * @param box The bounding box geometry
+ * @param offset The inset offset from the edges to prevent sticking to the boundary
+ * @returns Array of candidate Points
  */
 export function calculatePriorityPositions(box: Box, offset: number = 5): Point[] {
     const { xtl, ytl, xbr, ybr, width, height } = box;
@@ -68,33 +83,36 @@ export function calculatePriorityPositions(box: Box, offset: number = 5): Point[
     const cy = ytl + height / 2;
 
     return [
-        // 1. 中心点
+        // 1. Center point
         { x: cx, y: cy },
-        // 2. 四角 (带 offset 防止贴边)
-        { x: xtl + offset, y: ytl + offset }, // 左上
-        { x: xbr - offset, y: ytl + offset }, // 右上
-        { x: xtl + offset, y: ybr - offset }, // 左下
-        { x: xbr - offset, y: ybr - offset }, // 右下
-        // 3. 四边中点
-        { x: cx, y: ytl + offset },           // 上中
-        { x: cx, y: ybr - offset },           // 下中
-        { x: xtl + offset, y: cy },           // 左中
-        { x: xbr - offset, y: cy },           // 右中
+        // 2. Four corners (with offset to prevent sticking to edges)
+        { x: xtl + offset, y: ytl + offset }, // Top-Left
+        { x: xbr - offset, y: ytl + offset }, // Top-Right
+        { x: xtl + offset, y: ybr - offset }, // Bottom-Left
+        { x: xbr - offset, y: ybr - offset }, // Bottom-Right
+        // 3. Four edge midpoints
+        { x: cx, y: ytl + offset },           // Top-Middle
+        { x: cx, y: ybr - offset },           // Bottom-Middle
+        { x: xtl + offset, y: cy },           // Left-Middle
+        { x: xbr - offset, y: cy },           // Right-Middle
     ];
 }
 
 /**
- * 辅助：从 CVAT ObjectState 提取 Box（支持所有形状类型）
+ * Helper: Extract an oriented Box from CVAT's ObjectState (supports all shape types).
  *
- * - Rectangle: 直接使用 [xtl, ytl, xbr, ybr]
- * - 其他形状: 从 points [x1,y1,x2,y2,...] 计算包围盒
+ * - Rectangle: Directly uses [xtl, ytl, xbr, ybr]
+ * - Other shapes: Calculates the bounding box from points [x1, y1, x2, y2, ...]
+ *
+ * @param state CVAT ObjectState instance
+ * @returns The bounding Box object, or null if invalid
  */
 export function getBoxFromState(state: any): Box | null {
     if (!state || !state.points || state.points.length < 2) return null;
 
     const points: number[] = state.points;
 
-    // 提取所有 x 坐标和 y 坐标
+    // Extract all x and y coordinates
     const xs: number[] = [];
     const ys: number[] = [];
     for (let i = 0; i < points.length - 1; i += 2) {

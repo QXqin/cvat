@@ -17,7 +17,7 @@ COPY cvat-data/package.json /tmp/cvat-data/
 
 # Install common dependencies
 WORKDIR /tmp/
-RUN DISABLE_HUSKY=1 yarn install --immutable
+RUN DISABLE_HUSKY=1 yarn install
 
 # Build source code
 COPY cvat-data/ /tmp/cvat-data/

@@ -63,7 +63,10 @@ Supports queuing multiple relationship triplets prior to submission. Each valida
 ### 4. Technical Architecture
 *(Reserved: Insert an architectural diagram illustrating how the `Relation Dialog` mounts onto the native CVAT `StandardWorkspace` React component tree and Redux state interception mechanisms.)*
 - **UI Injection:** Custom action buttons are registered within `cvat-ui/src/containers/annotation-page/standard-workspace/controls-side-bar`.
+- **UI Component Decomposition:** The monolithic `relation-dialog` has been fully modularized into discrete entities (`PlayerControls`, `ObjectList`, `RelationForm`) with custom React hooks (`useAnnotations`, `useKeyboardShortcuts`, `useWipeAndSync`) for robust maintainability.
+- **Algorithm Normalization:** Math-heavy core algorithms (like `PositionManager` and Priority Rendering) are strictly documented with English JSDoc and verified by comprehensive Jest test suites.
 - **State Management:** Maintains isolated component State to prevent polluting the CVAT global Redux store, triggering transactional queries to the core API only upon invoking a "Wipe & Sync".
+- **Backend Refactoring:** Python execution environments (`download_nuctl.py`, `processor.py`) have been rebuilt to CLI-driven `argparse` patterns, eliminating internal path hardcoding, with enforced pylint standardizations and unit test isolation.
 
 ---
 

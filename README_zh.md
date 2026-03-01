@@ -58,7 +58,10 @@
 ### 4. 技术架构层级 (Architecture)
 *(此处预留：后续可补充架构简图，说明 `Relation Dialog` 如何挂载至 CVAT `StandardWorkspace` 原生 React 组件树，以及 Redux 状态拦截机制)*
 - **UI 注入点**: 在 `cvat-ui/src/containers/annotation-page/standard-workspace/controls-side-bar` 中注册自定义操作按钮。
+- **UI 组件重构解耦**: 将原本庞大的 `relation-dialog` 彻底模块化为独立的可复用组件 (`PlayerControls`, `ObjectList`, `RelationForm`)，并抽离了自定义 Hooks (`useAnnotations`, `useKeyboardShortcuts`, `useWipeAndSync`) 以提升代码可维护性。
+- **算法规范化**: 核心数学算法（如 `PositionManager` 与优先级排版）已严格按照 JSDoc 英文文档规范重写，并通过完备的 Jest 单元测试。
 - **状态管理**: 维持独立组件 State，避免污染 CVAT 全局 Redux Store，仅在触发“一键重排清洗 (Wipe & Sync)”时向核心 API 发起事务性请求。
+- **后端脚本解耦**: 将 Python 执行环境（如 `download_nuctl.py`、`processor.py`）重构为基于 `argparse` 的标准 CLI 脚本，去除了所有硬编码的依赖路径，强制落实 Pylint 代码规范，并补齐了逻辑单元测试。
 
 ---
 

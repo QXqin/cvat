@@ -141,6 +141,7 @@ const ObservedGroupControl = ControlVisibilityObserver<GroupControlProps>(GroupC
 const ObservedJoinControl = ControlVisibilityObserver<JoinControlProps>(JoinControl);
 const ObservedSplitControl = ControlVisibilityObserver<SplitControlProps>(SplitControl);
 const ObservedSliceControl = ControlVisibilityObserver<SliceControlProps>(SliceControl);
+const ObservedRelationControl = ControlVisibilityObserver(RelationControl);
 
 export default function ControlsSideBarComponent(props: Props): JSX.Element {
     const {
@@ -205,22 +206,22 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
             };
 
     const dynamicGroupIconProps =
-    activeControl === ActiveControl.GROUP ?
-        {
-            className: 'cvat-group-control cvat-active-canvas-control',
-            onClick: (): void => {
-                canvasInstance.group({ enabled: false });
-                updateActiveControl(ActiveControl.CURSOR);
-            },
-        } :
-        {
-            className: 'cvat-group-control',
-            onClick: (): void => {
-                canvasInstance.cancel();
-                canvasInstance.group({ enabled: true });
-                updateActiveControl(ActiveControl.GROUP);
-            },
-        };
+        activeControl === ActiveControl.GROUP ?
+            {
+                className: 'cvat-group-control cvat-active-canvas-control',
+                onClick: (): void => {
+                    canvasInstance.group({ enabled: false });
+                    updateActiveControl(ActiveControl.CURSOR);
+                },
+            } :
+            {
+                className: 'cvat-group-control',
+                onClick: (): void => {
+                    canvasInstance.cancel();
+                    canvasInstance.group({ enabled: true });
+                    updateActiveControl(ActiveControl.GROUP);
+                },
+            };
 
     const dynamicTrackIconProps = activeControl === ActiveControl.SPLIT ?
         {
@@ -464,7 +465,7 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
                 activeControl={activeControl}
                 disabled={controlsDisabled}
             />
-            <RelationControl />
+            <ObservedRelationControl />
             <ExtraControlsControl />
 
         </Layout.Sider>
