@@ -61,7 +61,37 @@ Extended annotation sessions involving merge/split operations inevitably lead to
 Supports queuing multiple relationship triplets prior to submission. Each validated relation is persisted as a continuous `TRACK` composed of `POINTS`, mathematically projected to the bounding box center of the target Subject. The logical track is automatically terminated (attribute `outside = true` set) when either participating entity exits the spatial frame.
 
 ### 4. Technical Architecture
-*(Reserved: Insert an architectural diagram illustrating how the `Relation Dialog` mounts onto the native CVAT `StandardWorkspace` React component tree and Redux state interception mechanisms.)*
+```mermaid
+flowchart TB
+    User[Annotator] --> Workspace[CVAT StandardWorkspace]
+
+    subgraph UI[Frontend Component Layer]
+        Workspace --> SideBar[Controls Side Bar]
+        SideBar --> Entry[Relation Tool Button]
+        Entry --> Dialog[Relation Dialog]
+        Dialog --> Player[PlayerControls<br/>Standalone Frame Player]
+        Dialog --> Objects[ObjectList<br/>Subject/Object Selection]
+        Dialog --> Form[RelationForm<br/>Predicate & Queue]
+    end
+
+    subgraph Hooks[Business Orchestration Layer]
+        Dialog --> useAnnotations[useAnnotations<br/>Read/Organize Annotation Objects]
+        Dialog --> useKeyboard[useKeyboardShortcuts<br/>Capture & Isolate Shortcuts]
+        Dialog --> useWipe[useWipeAndSync<br/>Track ID Normalization Transaction]
+    end
+
+    subgraph CVATCore[CVAT Native Layer]
+        useAnnotations --> AnnotationAPI[annotations.export/import/save]
+        useWipe --> AnnotationAPI
+        useKeyboard -.Intercept.-> Redux[Global Redux Shortcuts / Player State]
+        Player --> FrameAPI[Frame Controller API]
+    end
+
+    subgraph Storage[Persistence Layer]
+        AnnotationAPI --> Backend[Django Backend]
+        Backend --> DB[(CVAT Database)]
+    end
+```
 - **UI Injection:** Custom action buttons are registered within `cvat-ui/src/containers/annotation-page/standard-workspace/controls-side-bar`.
 - **UI Component Decomposition:** The monolithic `relation-dialog` has been fully modularized into discrete entities (`PlayerControls`, `ObjectList`, `RelationForm`) with custom React hooks (`useAnnotations`, `useKeyboardShortcuts`, `useWipeAndSync`) for robust maintainability.
 - **Algorithm Normalization:** Math-heavy core algorithms (like `PositionManager` and Priority Rendering) are strictly documented with English JSDoc and verified by comprehensive Jest test suites.
@@ -102,7 +132,9 @@ The tool mathematically links to an explicit target label named `Relation`. You 
 <div align="center">
   <img src="./assets/workflow.gif" alt="" width="80%" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
 </div>
+
 1. **Base Annotation:** Annotate target objects (e.g., `Car`, `Pedestrian`) using standard CVAT primitives (bounding box, polygon, etc.). For the TransT assisted annotation deployment guide, please refer to: [TransT Tracker Deployment Guide](./serverless/pytorch/dschoerk/transt/nuclio/DEPLOY_TRANST.md).
+
 2. **Open Module:** Click the **Relation Tool icon** in the left sidebar control panel (Shortcut: <kbd>R</kbd>).
 3. **Select Entities:** In the dialog window, designate a **Subject** and an **Object** from the detected entity list.
 4. **Map Predicate:** Select an active **Predicate** from the ontology dropdown.
