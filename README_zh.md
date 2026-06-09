@@ -56,7 +56,37 @@
 支持将多条关系三元组加入队列后统一提交。每条生成的关系以 `TRACK` 类型、`POINTS` 形状存储，定位于主体包围框中心。当主体或客体从画面中消失时，该 Track 自动终止（设置 `outside = true`）。
 
 ### 4. 技术架构层级 (Architecture)
-*(此处预留：后续可补充架构简图，说明 `Relation Dialog` 如何挂载至 CVAT `StandardWorkspace` 原生 React 组件树，以及 Redux 状态拦截机制)*
+```mermaid
+flowchart TB
+    User[标注员] --> Workspace[CVAT StandardWorkspace]
+
+    subgraph UI[前端组件层]
+        Workspace --> SideBar[Controls Side Bar]
+        SideBar --> Entry[Relation Tool Button]
+        Entry --> Dialog[Relation Dialog]
+        Dialog --> Player[PlayerControls<br/>独立帧播放器]
+        Dialog --> Objects[ObjectList<br/>主体/客体选择]
+        Dialog --> Form[RelationForm<br/>谓词与队列]
+    end
+
+    subgraph Hooks[业务编排层]
+        Dialog --> useAnnotations[useAnnotations<br/>读取/组织标注对象]
+        Dialog --> useKeyboard[useKeyboardShortcuts<br/>捕获并隔离快捷键]
+        Dialog --> useWipe[useWipeAndSync<br/>Track ID 归一化事务]
+    end
+
+    subgraph CVATCore[CVAT 原生能力层]
+        useAnnotations --> AnnotationAPI[annotations.export/import/save]
+        useWipe --> AnnotationAPI
+        useKeyboard -.拦截.-> Redux[全局 Redux 快捷键/播放器状态]
+        Player --> FrameAPI[Frame Controller API]
+    end
+
+    subgraph Storage[持久化层]
+        AnnotationAPI --> Backend[Django Backend]
+        Backend --> DB[(CVAT Database)]
+    end
+```
 - **UI 注入点**: 在 `cvat-ui/src/containers/annotation-page/standard-workspace/controls-side-bar` 中注册自定义操作按钮。
 - **UI 组件重构解耦**: 将原本庞大的 `relation-dialog` 彻底模块化为独立的可复用组件 (`PlayerControls`, `ObjectList`, `RelationForm`)，并抽离了自定义 Hooks (`useAnnotations`, `useKeyboardShortcuts`, `useWipeAndSync`) 以提升代码可维护性。
 - **算法规范化**: 核心数学算法（如 `PositionManager` 与优先级排版）已严格按照 JSDoc 英文文档规范重写，并通过完备的 Jest 单元测试。
