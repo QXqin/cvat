@@ -100,6 +100,23 @@ services:
       CVAT_BASE_URL:
       ONE_RUNNING_JOB_IN_QUEUE_PER_USER:
     command: init run server
+    volumes:
+      - cvat_data:/home/django/data
+      - cvat_keys:/home/django/keys
+      - cvat_logs:/home/django/logs
+      - cvat_socket:/tmp/cvat
+    networks:
+      cvat:
+        aliases:
+          - cvat-server
+
+  cvat_nginx:
+    container_name: cvat_nginx
+    image: cvat/server:${CVAT_VERSION:-dev}
+    restart: always
+    depends_on:
+      - cvat_server
+    command: run nginx
     labels:
       traefik.enable: "true"
       traefik.http.services.cvat.loadbalancer.server.port: "8080"
@@ -110,8 +127,7 @@ services:
       traefik.http.routers.cvat.entrypoints: web
     volumes:
       - cvat_data:/home/django/data
-      - cvat_keys:/home/django/keys
-      - cvat_logs:/home/django/logs
+      - cvat_socket:/tmp/cvat
     networks:
       cvat:
         aliases:
@@ -249,6 +265,13 @@ services:
   cvat_ui:
     container_name: cvat_ui
     image: cvat/ui:${CVAT_VERSION:-dev}
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+      args:
+        http_proxy:
+        https_proxy:
+        no_proxy:
     restart: always
     depends_on:
       - cvat_server
@@ -426,6 +449,7 @@ volumes:
   cvat_inmem_db:
   cvat_events_db:
   cvat_cache_db:
+  cvat_socket:
 
 networks:
   cvat:

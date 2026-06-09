@@ -112,25 +112,75 @@ The tool mathematically links to an explicit target label named `Relation`. You 
 
 ---
 
-## 📦 Installation Options
+## 📦 Installation
 
-> **⚠️ Version Compatibility Warning:**
-> This extension was developed against **CVAT v2.56.2**. Due to serialization and deserialization routines interacting directly with the underlying annotation matrix, it is highly recommended to apply this patch to equivalent or compatible versions.
+> **⚠️ Version Compatibility:** This extension targets **CVAT v2.56.2**.
 
-### Option A: Clone the Repository Directly
+### Option A: Docker — Full Stack from Source (Recommended)
+
+The simplest way to get everything running, including the custom UI with Relation Tool built in.
+
+**Prerequisites:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
+
+```bash
+# 1. Clone this repository
+git clone -b relation-auto-tool https://github.com/QXqin/cvat.git
+cd cvat
+
+# 2. Build images and start all services
+docker compose up --build -d
+```
+
+> **First build:** Downloads all dependencies and compiles the custom UI — expect 15–30 minutes.  
+> **Subsequent starts:** `docker compose up -d` (no `--build` needed unless code changes).
+
+**3. Verify startup** — wait until all containers are healthy:
+
+```bash
+docker compose ps
+```
+
+All services should show `running` or `healthy`. Then open **http://localhost:8080** in your browser.
+
+**4. Create a superuser** (first time only):
+
+```bash
+docker exec -it cvat_server python manage.py createsuperuser
+```
+
+**5. Configure the `Relation` label** in your project:
+
+1. Log in → **Projects** → **Create new project**
+2. In the **Labels** tab, click **Raw** (JSON editor)
+3. Paste the JSON from the [Label Schema](#️-configuration-label-schema) section above
+4. Save the project
+
+**6. Create a Task** under the project and open the annotation editor.
+
+**7. Verify the Relation Tool** — the relation icon should appear in the left sidebar. Click it (or press <kbd>R</kbd>) to open the Relation dialog.
+
+> Use <kbd>D</kbd> / <kbd>F</kbd> to step through frames and verify that Relation Tracks are generated correctly after clicking **Generate**.
+
+---
+
+### Option B: Frontend Build Only
+
+> Requires an existing CVAT v2.56.2 backend instance. Only replaces the UI bundle.
 
 ```bash
 git clone -b relation-auto-tool https://github.com/QXqin/cvat.git
 cd cvat/cvat-ui
 yarn install
 yarn run build
+# Deploy the output in `dist/` to your CVAT nginx static path
 ```
 
-### Option B: Apply Local Patch to Existing Environment
+### Option C: Apply as Patch to Existing Source
 
-Download the `cvat-relation-annotation-tool.patch` architecture patch from the repository root and apply it sequentially:
+> For teams already maintaining a CVAT fork who want to cherry-pick this feature.
 
 ```bash
+# From within your existing CVAT source root
 git apply cvat-relation-annotation-tool.patch
 cd cvat-ui
 yarn run build

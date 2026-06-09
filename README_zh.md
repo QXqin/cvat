@@ -110,23 +110,73 @@
 
 ## 🛠 安装方式
 
-> **⚠️ 版本兼容性提醒：**
-> 本扩展插件基于 **CVAT v2.56.2** 版本体系开发。
+> **⚠️ 版本兼容性提醒：** 本扩展插件基于 **CVAT v2.56.2** 版本体系开发。
 
-### 方案 A：直接克隆本仓库
+### 方案 A：Docker 全栈启动（推荐）
+
+最简单的方式，含自定义 UI 和关系标注工具，开箱即用。
+
+**前提条件：** 已安装并运行 [Docker Desktop](https://www.docker.com/products/docker-desktop/)。
+
+```bash
+# 1. 克隆本仓库
+git clone -b relation-auto-tool https://github.com/QXqin/cvat.git
+cd cvat
+
+# 2. 构建镜像并启动所有服务
+docker compose up --build -d
+```
+
+> **首次构建：** 需下载依赖并编译自定义 UI，预计耗时 15–30 分钟。  
+> **后续启动：** 直接 `docker compose up -d`（无代码改动无需 `--build`）。
+
+**3. 验证启动状态** — 等待所有容器就绪：
+
+```bash
+docker compose ps
+```
+
+所有服务显示 `running` 或 `healthy` 后，浏览器打开 **http://localhost:8080**。
+
+**4. 创建超级用户**（首次使用）：
+
+```bash
+docker exec -it cvat_server python manage.py createsuperuser
+```
+
+**5. 配置 `Relation` 标签** — 在项目中添加标签：
+
+1. 登录 → **Projects** → **Create new project**
+2. 切换到 **Labels** 选项卡，点击 **Raw**（JSON 编辑器）
+3. 粘贴上方 [标签配置](#️-前提条件cvat-项目标签配置) 章节中的 JSON
+4. 保存项目
+
+**6. 在项目下创建 Task**，上传视频/图片，然后点击 **Open** 进入标注编辑器。
+
+**7. 验证关系标注工具** — 左侧工具栏中应出现关系标注图标，点击（或按 <kbd>R</kbd>）打开关系对话框。
+
+> 点击 **Generate** 后，使用 <kbd>D</kbd> / <kbd>F</kbd> 逐帧浏览，验证关系 Track 是否正确生成。
+
+---
+
+### 方案 B：仅构建前端
+
+> 适用于已有 CVAT v2.56.2 后端实例的场景，仅替换 UI 包。
 
 ```bash
 git clone -b relation-auto-tool https://github.com/QXqin/cvat.git
 cd cvat/cvat-ui
 yarn install
 yarn run build
+# 将 dist/ 目录部署到你的 CVAT nginx 静态文件路径
 ```
 
-### 方案 B：以补丁形式应用到已有 CVAT 项目
+### 方案 C：以补丁形式应用到已有源码
 
-从仓库根目录下载 `cvat-relation-annotation-tool.patch` 文件并应用：
+> 适用于已维护 CVAT fork 的团队，按需集成此功能。
 
 ```bash
+# 在你现有的 CVAT 源码根目录下执行
 git apply cvat-relation-annotation-tool.patch
 cd cvat-ui
 yarn run build
